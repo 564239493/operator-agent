@@ -1,0 +1,75 @@
+from enum import StrEnum
+
+
+class DataType(StrEnum):
+    FLOAT32 = "FLOAT32"
+    FLOAT16 = "FLOAT16"
+    BFLOAT16 = "BFLOAT16"
+    INT8 = "INT8"
+    UINT8 = "UINT8"
+    INT32 = "INT32"
+    INT64 = "INT64"
+    BOOL = "BOOL"
+
+
+class DataFormat(StrEnum):
+    ND = "ND"
+    NC = "NC"
+    NCL = "NCL"
+    NCHW = "NCHW"
+    NCDHW = "NCDHW"
+    NHWC = "NHWC"
+
+
+class ParamDirection(StrEnum):
+    INPUT = "input"
+    OUTPUT = "output"
+
+
+class SectionType(StrEnum):
+    TITLE = "title"
+    PRODUCT_SUPPORT = "product_support"
+    FUNCTION_DESCRIPTION = "function_description"
+    FUNCTION_PROTOTYPE = "function_prototype"
+    GET_WORKSPACE_SIZE = "get_workspace_size"
+    EXECUTE_API = "execute_api"
+    CONSTRAINTS = "constraints"
+    USAGE_EXAMPLE = "usage_example"
+    PARAMS_GET_WORKSPACE = "params_get_workspace"
+    RETURN_CODES_GET_WORKSPACE = "return_codes_get_workspace"
+    PARAMS_EXECUTE = "params_execute"
+    RETURN_CODES_EXECUTE = "return_codes_execute"
+    UNKNOWN = "unknown"
+
+
+class ReviewStatus(StrEnum):
+    DRAFT = "draft"
+    PENDING_REVIEW = "pending_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class TaskComplexity(StrEnum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class LLMProvider(StrEnum):
+    OPENAI = "openai"
+    CLAUDE = "claude"
+    QWEN = "qwen"
+    WENXIN = "wenxin"
+
+
+class TestCaseCategory(StrEnum):
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
+    BOUNDARY = "boundary"
+
+
+class PipelineStatus(StrEnum):
+    RUNNING = "running"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    FAILED = "failed"

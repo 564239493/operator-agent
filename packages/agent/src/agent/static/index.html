@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operator Agent - 测试页面</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; height: 100vh; overflow: hidden; }
+  .layout { display: flex; height: 100vh; }
+
+  /* Sidebar */
+  .sidebar { width: 200px; min-width: 200px; background: #1e293b; display: flex; flex-direction: column; }
+  .sidebar-header { padding: 20px 16px; border-bottom: 1px solid #334155; }
+  .sidebar-header h1 { font-size: 1.1rem; color: #f1f5f9; margin: 0; }
+  .sidebar-header p { font-size: .75rem; color: #94a3b8; margin-top: 4px; }
+  .sidebar-nav { display: flex; flex-direction: column; padding: 12px 8px; gap: 4px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 8px; cursor: pointer; font-size: .9rem; color: #cbd5e1; transition: .15s; border: none; background: none; text-align: left; width: 100%; }
+  .nav-item:hover { background: #334155; color: #f1f5f9; }
+  .nav-item.active { background: #4f46e5; color: #fff; font-weight: 600; }
+  .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* Main content */
+  .main { flex: 1; overflow: hidden; padding: 24px; display: flex; flex-direction: column; }
+  .card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.1); border: 1px solid #e5e7eb; }
+  .card h2 { font-size: 1.05rem; margin-bottom: 12px; color: #555; }
+  .main button { background: #4f46e5; color: #fff; border: none; border-radius: 6px; padding: 10px 24px; font-size: .95rem; cursor: pointer; transition: .2s; }
+  .main button:hover { background: #4338ca; }
+  .main button:disabled { background: #a5a5a5; cursor: not-allowed; }
+  .main button.secondary { background: #6b7280; }
+  .main button.secondary:hover { background: #4b5563; }
+
+  /* Split panel layout */
+  .split-panel { display: flex; gap: 20px; flex: 1; min-height: 0; }
+  .split-left { flex: 0 0 400px; min-width: 340px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px; }
+  .split-right { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; min-width: 0; }
+
+  .upload-area { border: 2px dashed #ccc; border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: .2s; }
+  .upload-area:hover, .upload-area.dragover { border-color: #4f46e5; background: #eef2ff; }
+  .upload-area p { color: #888; margin-top: 8px; }
+  .upload-area .filename { color: #4f46e5; font-weight: 600; margin-top: 8px; }
+  input[type="file"] { display: none; }
+
+  .or-divider { text-align: center; color: #aaa; margin: 10px 0; font-size: .9rem; }
+
+  textarea { width: 100%; height: 140px; border: 1px solid #ddd; border-radius: 6px; padding: 12px; font-family: monospace; font-size: .85rem; resize: vertical; }
+  textarea:focus { outline: none; border-color: #4f46e5; }
+
+  .status { margin-top: 8px; font-size: .9rem; color: #666; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ccc; border-top-color: #4f46e5; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result pre { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: .85rem; line-height: 1.5; white-space: pre-wrap; word-break: break-all; flex: 1; }
+
+  /* Parsing process steps */
+  .parse-steps { list-style: none; padding: 0; }
+  .parse-step { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; font-size: .9rem; color: #9ca3af; border-bottom: 1px solid #f3f4f6; }
+  .parse-step:last-child { border-bottom: none; }
+  .parse-step .step-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; flex-shrink: 0; background: #f3f4f6; color: #9ca3af; font-weight: 700; transition: .2s; }
+  .parse-step.done .step-icon { background: #dcfce7; color: #166534; }
+  .parse-step.active .step-icon { background: #dbeafe; color: #1d4ed8; animation: pulse 1.2s ease-in-out infinite; }
+  .parse-step.error .step-icon { background: #fee2e2; color: #991b1b; }
+  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(29,78,216,.3); } 50% { box-shadow: 0 0 0 6px rgba(29,78,216,0); } }
+  .parse-step .step-info { flex: 1; min-width: 0; }
+  .parse-step .step-text { line-height: 26px; }
+  .parse-step .step-detail { font-size: .8rem; color: #9ca3af; margin-top: 2px; }
+  .parse-step.done { color: #374151; }
+  .parse-step.active { color: #1d4ed8; }
+  .parse-step.error { color: #991b1b; }
+
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: .8rem; font-weight: 600; }
+  .badge-ok { background: #dcfce7; color: #166534; }
+  .badge-err { background: #fee2e2; color: #991b1b; }
+  .badge-new { background: #dbeafe; color: #1e40af; }
+  .badge-unchanged { background: #f3f4f6; color: #374151; }
+  .badge-updated { background: #fef3c7; color: #92400e; }
+
+  .meta { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+  .meta span { font-size: .85rem; }
+
+  /* Empty state for right panel */
+  .right-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: #bbb; text-align: center; gap: 8px; }
+  .right-empty svg { width: 48px; height: 48px; opacity: .4; }
+  .right-empty p { font-size: .95rem; }
+
+  /* Query section */
+  .op-list { list-style: none; }
+  .op-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: .15s; }
+  .op-item:hover { background: #f9fafb; border-color: #4f46e5; }
+  .op-item .op-name { font-weight: 600; font-size: .95rem; }
+  .op-item .op-meta { font-size: .8rem; color: #888; }
+  .op-item .op-ver { font-size: .8rem; color: #6b7280; }
+
+  .detail-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .detail-tab { padding: 6px 14px; border-radius: 6px; font-size: .85rem; cursor: pointer; background: #f3f4f6; border: 1px solid #e5e7eb; color: #555; transition: .15s; }
+  .detail-tab.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+
+  .section-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin-bottom: 10px; }
+  .section-card h4 { font-size: .9rem; margin-bottom: 8px; color: #374151; }
+  .section-card .section-body { font-size: .85rem; color: #555; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow-y: auto; background: #fff; padding: 12px; border-radius: 4px; border: 1px solid #e5e7eb; }
+  .section-type { font-size: .75rem; padding: 2px 8px; border-radius: 10px; background: #e0e7ff; color: #3730a3; font-weight: 600; }
+
+  .empty-state { text-align: center; padding: 40px; color: #aaa; }
+  .back-link { display: inline-block; margin-bottom: 12px; color: #4f46e5; cursor: pointer; font-size: .9rem; }
+  .back-link:hover { text-decoration: underline; }
+
+  .panel { display: none; flex: 1; min-height: 0; }
+  .panel.active { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>Operator Agent</h1>
+      <p>测试管理页面</p>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="switchTab('parse', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        文档解析
+      </button>
+      <button class="nav-item" onclick="switchTab('query', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        查询数据库
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+
+  <!-- Document Parsing Panel (left-right split) -->
+  <div class="panel active" id="panelParse">
+    <div class="split-panel">
+      <!-- Left: Input -->
+      <div class="split-left">
+        <div class="card">
+          <h2>上传文档</h2>
+          <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <div>点击选择文件 或 拖拽文件到此处</div>
+            <p>支持 .md 文件</p>
+            <div class="filename" id="fileName"></div>
+          </div>
+          <input type="file" id="fileInput" accept=".md,.markdown,.txt">
+
+          <div class="or-divider">—— 或者直接粘贴内容 ——</div>
+
+          <textarea id="pasteArea" placeholder="在此粘贴 CANN Operator Markdown 文档内容..."></textarea>
+
+          <button id="submitBtn" onclick="submit()">开始解析</button>
+          <div class="status" id="status"></div>
+        </div>
+      </div>
+
+      <!-- Right: Parsing process & result -->
+      <div class="split-right" id="rightPanel">
+        <div class="card" style="flex:1;display:flex;flex-direction:column" id="rightCard">
+          <h2>解析过程</h2>
+          <!-- Empty state -->
+          <div class="right-empty" id="rightEmpty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <p>请在左侧上传文档或粘贴内容</p>
+          </div>
+          <!-- Steps (hidden initially) -->
+          <div id="parseStepsWrap" style="display:none">
+            <ul class="parse-steps" id="parseSteps">
+              <li class="parse-step" data-step="upload">
+                <div class="step-icon">1</div>
+                <div class="step-info"><div class="step-text">上传文档</div><div class="step-detail" id="stepDetail0"></div></div>
+              </li>
+              <li class="parse-step" data-step="check">
+                <div class="step-icon">2</div>
+                <div class="step-info"><div class="step-text">版本检查</div><div class="step-detail" id="stepDetail1"></div></div>
+              </li>
+              <li class="parse-step" data-step="parse">
+                <div class="step-icon">3</div>
+                <div class="step-info"><div class="step-text">文档解析</div><div class="step-detail" id="stepDetail2"></div></div>
+              </li>
+              <li class="parse-step" data-step="save">
+                <div class="step-icon">4</div>
+                <div class="step-info"><div class="step-text">存储结果</div><div class="step-detail" id="stepDetail3"></div></div>
+              </li>
+            </ul>
+          </div>
+          <!-- Result -->
+          <div id="resultCard" style="display:none;margin-top:12px;flex:1;display:none;flex-direction:column;min-height:0">
+            <div class="meta" id="resultMeta" style="margin-top:0;margin-bottom:8px"></div>
+            <pre id="resultBody" style="flex:1;min-height:100px"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Query Panel -->
+  <div class="panel" id="panelQuery">
+    <div class="card" style="flex:1;display:flex;flex-direction:column">
+      <div id="queryListView">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h2 style="margin:0">已解析的 Operator 列表</h2>
+          <button class="secondary" onclick="loadOperators()">刷新</button>
+        </div>
+        <div id="operatorList"></div>
+        <div class="status" id="queryStatus"></div>
+      </div>
+
+      <div id="queryDetailView" style="display:none">
+        <span class="back-link" onclick="showList()">&larr; 返回列表</span>
+        <div id="detailMeta" class="meta"></div>
+        <div class="detail-tabs" id="detailTabs"></div>
+        <div id="detailContent"></div>
+      </div>
+    </div>
+  </div>
+  </main>
+</div>
+
+<script>
+/* ---------- Tab switching ---------- */
+function switchTab(name, el) {
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  if (name === 'query') loadOperators();
+}
+
+/* ---------- Parse step helpers ---------- */
+const STEPS = ['upload', 'check', 'parse', 'save'];
+
+function resetSteps() {
+  document.getElementById('rightEmpty').style.display = 'none';
+  document.getElementById('parseStepsWrap').style.display = '';
+  document.getElementById('resultCard').style.display = 'none';
+  document.querySelectorAll('.parse-step').forEach(el => {
+    el.className = 'parse-step';
+  });
+  STEPS.forEach((_, i) => {
+    document.getElementById('stepDetail' + i).textContent = '';
+  });
+}
+
+function setStep(index, state, detail) {
+  const stepEls = document.querySelectorAll('.parse-step');
+  if (index > 0 && stepEls[index - 1].classList.contains('active')) {
+    stepEls[index - 1].classList.remove('active');
+    stepEls[index - 1].classList.add('done');
+  }
+  stepEls[index].className = 'parse-step ' + state;
+  if (detail) document.getElementById('stepDetail' + index).textContent = detail;
+}
+
+function setStepDone(index, detail) { setStep(index, 'done', detail); }
+function setStepActive(index, detail) { setStep(index, 'active', detail); }
+function setStepError(index, detail) { setStep(index, 'error', detail); }
+
+function showResult(data) {
+  const resultCard = document.getElementById('resultCard');
+  const resultMeta = document.getElementById('resultMeta');
+  const resultBody = document.getElementById('resultBody');
+  resultCard.style.display = 'flex';
+  resultBody.textContent = JSON.stringify(data, null, 2);
+  if (data.success) {
+    const statusBadge = data.status ? '<span class="badge badge-' + data.status + '">' + data.status + '</span>' : '';
+    resultMeta.innerHTML = '<span class="badge badge-ok">SUCCESS</span>' + statusBadge +
+      '<span>Operator: <strong>' + data.operator_name + '</strong></span>' +
+      (data.version != null ? '<span>Version: <strong>' + data.version + '</strong></span>' : '') +
+      (data.sections_count != null ? '<span>Sections: <strong>' + data.sections_count + '</strong></span>' : '');
+  } else {
+    resultMeta.innerHTML = '<span class="badge badge-err">ERROR</span>';
+  }
+}
+
+/* ---------- Upload & Parse ---------- */
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const pasteArea = document.getElementById('pasteArea');
+const submitBtn = document.getElementById('submitBtn');
+const statusEl = document.getElementById('status');
+const fileNameEl = document.getElementById('fileName');
+
+let selectedFile = null;
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    selectedFile = e.dataTransfer.files[0];
+    fileInput.files = e.dataTransfer.files;
+    fileNameEl.textContent = selectedFile.name;
+    pasteArea.value = '';
+  }
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) {
+    selectedFile = fileInput.files[0];
+    fileNameEl.textContent = selectedFile.name;
+    pasteArea.value = '';
+  }
+});
+
+async function submit() {
+  let blob, filename;
+  if (selectedFile) {
+    blob = selectedFile; filename = selectedFile.name;
+  } else if (pasteArea.value.trim()) {
+    blob = new Blob([pasteArea.value.trim()], { type: 'text/markdown' });
+    filename = 'pasted.md';
+  } else {
+    statusEl.textContent = '请先选择文件或粘贴内容'; return;
+  }
+  const form = new FormData();
+  form.append('file', blob, filename);
+
+  submitBtn.disabled = true;
+  statusEl.innerHTML = '<span class="spinner"></span>解析中...';
+
+  resetSteps();
+  setStepActive(0, '正在上传 ' + filename);
+
+  try {
+    // Step 1: Upload (sending request)
+    const res = await fetch('/api/v1/upload', { method: 'POST', body: form });
+    setStepDone(0, filename + ' 上传完成');
+
+    // Step 2-4: server processes check → parse → save
+    setStepActive(1, '正在检查版本...');
+    const data = await res.json();
+
+    if (data.success) {
+      setStepDone(1, '版本: ' + (data.version || '新建'));
+      setStepDone(2, '解析到 ' + (data.sections_count || 0) + ' 个 Section');
+      setStepDone(3, '已保存');
+      statusEl.textContent = '解析完成';
+    } else {
+      // Try to show which step failed based on error message
+      const err = data.error || '未知错误';
+      if (err.includes('版本') || err.includes('version')) {
+        setStepDone(0, filename + ' 上传完成');
+        setStepError(1, err);
+      } else if (err.includes('解析') || err.includes('parse')) {
+        setStepDone(0, filename + ' 上传完成');
+        setStepDone(1, '版本检查通过');
+        setStepError(2, err);
+      } else {
+        setStepDone(0, filename + ' 上传完成');
+        setStepDone(1, '版本检查通过');
+        setStepDone(2, '解析完成');
+        setStepError(3, err);
+      }
+      statusEl.textContent = '处理失败: ' + err;
+    }
+
+    showResult(data);
+  } catch (err) {
+    setStepError(0, err.message);
+    statusEl.textContent = '请求失败: ' + err.message;
+    showResult({ success: false, error: err.message });
+  } finally { submitBtn.disabled = false; }
+}
+
+/* ---------- Query ---------- */
+const queryStatus = document.getElementById('queryStatus');
+
+async function loadOperators() {
+  queryStatus.innerHTML = '<span class="spinner"></span>加载中...';
+  try {
+    const res = await fetch('/api/v1/operators');
+    const data = await res.json();
+    const listEl = document.getElementById('operatorList');
+    if (!data.operators || data.operators.length === 0) {
+      listEl.innerHTML = '<div class="empty-state">暂无数据，请先上传文档</div>';
+      queryStatus.textContent = '';
+      return;
+    }
+    listEl.innerHTML = '<ul class="op-list">' + data.operators.map(op => `
+      <li class="op-item" onclick="loadDetail('${op.name}')">
+        <div>
+          <div class="op-name">${op.name}</div>
+          <div class="op-meta">${op.source_url || ''} ${op.created_at || ''}</div>
+        </div>
+        <div class="op-ver">v${op.latest_version ?? '-'}</div>
+      </li>`).join('') + '</ul>';
+    queryStatus.textContent = '共 ' + data.operators.length + ' 个 Operator';
+  } catch (err) {
+    queryStatus.textContent = '加载失败: ' + err.message;
+  }
+}
+
+function showList() {
+  document.getElementById('queryListView').style.display = '';
+  document.getElementById('queryDetailView').style.display = 'none';
+}
+
+async function loadDetail(name) {
+  document.getElementById('queryListView').style.display = 'none';
+  document.getElementById('queryDetailView').style.display = '';
+  const metaEl = document.getElementById('detailMeta');
+  const tabsEl = document.getElementById('detailTabs');
+  const contentEl = document.getElementById('detailContent');
+
+  metaEl.innerHTML = '<span class="spinner"></span>加载中...';
+  tabsEl.innerHTML = '';
+  contentEl.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/v1/operators/' + encodeURIComponent(name));
+    const data = await res.json();
+    if (!data.success) {
+      metaEl.innerHTML = '<span class="badge badge-err">ERROR</span> ' + data.error;
+      return;
+    }
+    const doc = data.parsed_data;
+    metaEl.innerHTML = `
+      <span class="badge badge-ok">${doc.operator_name}</span>
+      <span>CANN: <strong>${doc.cann_version || '-'}</strong></span>
+      <span>Sections: <strong>${doc.sections?.length || 0}</strong></span>
+      <span>Signatures: <strong>${doc.function_signatures?.length || 0}</strong></span>
+    `;
+
+    tabsEl.innerHTML = `
+      <div class="detail-tab active" onclick="showDetailTab(this,'tabSections')">Sections</div>
+      <div class="detail-tab" onclick="showDetailTab(this,'tabSignatures')">函数签名</div>
+      <div class="detail-tab" onclick="showDetailTab(this,'tabProducts')">产品支持</div>
+      <div class="detail-tab" onclick="showDetailTab(this,'tabRaw')">Raw JSON</div>
+    `;
+
+    // Sections view
+    let sectionsHtml = '';
+    if (doc.sections && doc.sections.length) {
+      sectionsHtml = doc.sections.map(s => `
+        <div class="section-card">
+          <h4><span class="section-type">${s.section_type}</span> ${s.heading || ''}</h4>
+          <div class="section-body">${escapeHtml(s.content || '(empty)')}</div>
+        </div>`).join('');
+    } else {
+      sectionsHtml = '<div class="empty-state">无 Section 数据</div>';
+    }
+
+    // Signatures view
+    let sigsHtml = '';
+    if (doc.function_signatures && doc.function_signatures.length) {
+      sigsHtml = doc.function_signatures.map(sig => `
+        <div class="section-card">
+          <h4>${sig.function_name}</h4>
+          <div class="section-body"><code>${escapeHtml(sig.raw_code)}</code></div>
+          <div style="margin-top:8px;font-size:.85rem;color:#666">
+            <strong>返回类型:</strong> ${sig.return_type}<br>
+            <strong>参数:</strong> ${sig.parameters.join(', ') || 'void'}
+          </div>
+        </div>`).join('');
+    } else {
+      sigsHtml = '<div class="empty-state">无函数签名</div>';
+    }
+
+    // Products view
+    let prodsHtml = '';
+    if (doc.product_support && doc.product_support.length) {
+      prodsHtml = '<table style="width:100%;border-collapse:collapse;font-size:.9rem">' +
+        '<tr style="background:#f3f4f6"><th style="padding:8px;text-align:left;border:1px solid #e5e7eb">产品</th><th style="padding:8px;text-align:center;border:1px solid #e5e7eb">支持</th></tr>' +
+        doc.product_support.map(p =>
+          '<tr><td style="padding:8px;border:1px solid #e5e7eb">' + p.product + '</td>' +
+          '<td style="padding:8px;text-align:center;border:1px solid #e5e7eb">' + (p.supported ? '<span style="color:green">√</span>' : '<span style="color:red">×</span>') + '</td></tr>'
+        ).join('') + '</table>';
+    } else {
+      prodsHtml = '<div class="empty-state">无产品支持数据</div>';
+    }
+
+    // Raw JSON view
+    const rawHtml = '<pre>' + JSON.stringify(doc, null, 2) + '</pre>';
+
+    contentEl.innerHTML = `
+      <div id="tabSections" class="detail-content">${sectionsHtml}</div>
+      <div id="tabSignatures" class="detail-content" style="display:none">${sigsHtml}</div>
+      <div id="tabProducts" class="detail-content" style="display:none">${prodsHtml}</div>
+      <div id="tabRaw" class="detail-content" style="display:none">${rawHtml}</div>
+    `;
+  } catch (err) {
+    metaEl.innerHTML = '<span class="badge badge-err">ERROR</span> ' + err.message;
+  }
+}
+
+function showDetailTab(el, id) {
+  document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.detail-content').forEach(c => c.style.display = 'none');
+  el.classList.add('active');
+  document.getElementById(id).style.display = '';
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>

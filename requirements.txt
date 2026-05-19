@@ -1,0 +1,23 @@
+# operator-agent - CANN operator constraint extraction and test case generation
+# Python >= 3.12
+
+# === shared ===
+pydantic>=2.0
+python-dotenv>=1.0
+
+# === mcp-server ===
+mcp>=1.0
+aiosqlite>=0.20
+markdown-it-py[plugins]>=3.0
+
+# === agent ===
+fastapi>=0.110
+uvicorn>=0.29
+pydantic-settings>=2.0
+
+# === dev ===
+pytest>=8.0
+pytest-cov
+pytest-asyncio
+ruff
+mypy
