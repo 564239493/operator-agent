@@ -42,9 +42,9 @@ async def param_desc_extract_node(state: PipelineState) -> dict[str, Any]:
             logger.info("ParamDescExtract: no parameters for doc_id=%s, skipping", doc_id)
             return {"error": None}
 
-        # Get params_get_workspace section content from parsed data
-        parsed = await _mcp_client.get_parsed_by_doc_id(doc_id)
-        doc_content = _find_params_section_content(parsed.get("sections", [])) if parsed else ""
+        # Get params_get_workspace section content via MCP
+        section = await _mcp_client.get_section(doc_id, "params_get_workspace")
+        doc_content = section.get("content", "") if section else ""
         if not doc_content:
             logger.warning("ParamDescExtract: no section content for doc_id=%s", doc_id)
             return {"error": None}
@@ -102,14 +102,3 @@ async def _extract_desc(llm: ChatOpenAI, param_name: str, content: str) -> str:
     response = await llm.ainvoke(prompt)
     text = response.content if hasattr(response, "content") else str(response)
     return text.strip()
-
-
-def _find_params_section_content(sections: list[dict]) -> str | None:
-    """Find the params_get_workspace section(s) and return concatenated content."""
-    parts: list[str] = []
-    for section in sections:
-        if section.get("section_type") == "params_get_workspace":
-            content = section.get("content", "")
-            if content:
-                parts.append(content)
-    return "\n\n".join(parts) if parts else None

@@ -113,6 +113,13 @@ class MCPClient:
         """Query parameters for a specific document version."""
         return await self._call_tool("query_params_by_doc", {"doc_id": doc_id})
 
+    async def get_section(self, doc_id: int, section_type: str) -> dict | None:
+        """Retrieve a specific section from parsed document by section_type."""
+        return await self._call_tool("get_section", {
+            "doc_id": doc_id,
+            "section_type": section_type,
+        })
+
     async def update_param_descriptions(self, doc_id: int, updates: list[dict]) -> dict:
         """Batch update parameter description fields."""
         return await self._call_tool("update_param_descs", {

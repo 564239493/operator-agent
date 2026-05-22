@@ -156,6 +156,25 @@ def get_parsed_by_doc_id(doc_id: int) -> dict | None:
     return json.loads(row[0])
 
 
+def get_section_by_type(doc_id: int, section_type: str) -> dict | None:
+    """Retrieve a specific section from parsed document data by section_type.
+
+    Args:
+        doc_id: Primary key of document_versions table.
+        section_type: The section_type to match (e.g. "params_get_workspace").
+
+    Returns:
+        The matching section dict, or None if not found.
+    """
+    parsed = get_parsed_by_doc_id(doc_id)
+    if not parsed:
+        return None
+    for section in parsed.get("sections", []):
+        if section.get("section_type") == section_type:
+            return section
+    return None
+
+
 def save_parsed_document(operator_name: str, version: int, parsed_data: dict) -> None:
     """Save parsed document data to the database."""
     db = get_db()

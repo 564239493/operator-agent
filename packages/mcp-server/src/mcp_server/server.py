@@ -12,6 +12,7 @@ from mcp_server.db import get_db
 from mcp_server.tools.document_tools import (
     check_document_version,
     get_parsed_document,
+    get_section_by_type,
     list_all_operators,
     parse_document,
     query_parameters,
@@ -175,6 +176,21 @@ def save_product_support(doc_id: int, product_support_data: str) -> str:
 def get_operator(name: str) -> str:
     """Get operator info and latest parsed data."""
     result = get_parsed_document(name)
+    return json.dumps(result, ensure_ascii=False)
+
+
+@mcp.tool()
+def get_section(doc_id: int, section_type: str) -> str:
+    """Retrieve a specific section from a parsed document by section_type.
+
+    Args:
+        doc_id: Primary key of document_versions table.
+        section_type: Section type to match (e.g. "params_get_workspace").
+
+    Returns:
+        JSON string of the section dict, or "null" if not found.
+    """
+    result = get_section_by_type(doc_id, section_type)
     return json.dumps(result, ensure_ascii=False)
 
 
