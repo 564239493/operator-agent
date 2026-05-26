@@ -248,8 +248,11 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h2 style="margin:0">文档参数</h2>
         <div style="display:flex;gap:8px;align-items:center">
-          <select id="paramOperatorFilter" onchange="loadParams()" style="padding:6px 12px;border:1px solid #ddd;border-radius:6px;font-size:.85rem;min-width:180px">
+          <select id="paramOperatorFilter" onchange="onOperatorFilterChange()" style="padding:6px 12px;border:1px solid #ddd;border-radius:6px;font-size:.85rem;min-width:180px">
             <option value="">全部算子</option>
+          </select>
+          <select id="paramFunctionFilter" onchange="loadParams()" style="padding:6px 12px;border:1px solid #ddd;border-radius:6px;font-size:.85rem;min-width:200px">
+            <option value="">全部函数</option>
           </select>
           <button class="secondary" onclick="loadParams()">刷新</button>
         </div>
@@ -560,10 +563,18 @@ async function loadParamOperators() {
   } catch (_) {}
 }
 
+function onOperatorFilterChange() {
+  // Reset function filter when operator changes
+  const funcSelect = document.getElementById('paramFunctionFilter');
+  funcSelect.innerHTML = '<option value="">全部函数</option>';
+  loadParams();
+}
+
 async function loadParams() {
   const statusEl = document.getElementById('paramsStatus');
   const contentEl = document.getElementById('paramsContent');
   const operatorName = document.getElementById('paramOperatorFilter').value;
+  const funcFilter = document.getElementById('paramFunctionFilter').value;
 
   statusEl.innerHTML = '<span class="spinner"></span>加载中...';
   contentEl.innerHTML = '';
@@ -579,6 +590,26 @@ async function loadParams() {
       return;
     }
 
+    // Populate function name dropdown with unique values
+    const funcSelect = document.getElementById('paramFunctionFilter');
+    const currentFunc = funcSelect.value;
+    const funcNames = [...new Set(data.parameters.map(p => p.function_name))].sort();
+    funcSelect.innerHTML = '<option value="">全部函数</option>' +
+      funcNames.map(f => '<option value="' + escapeHtml(f) + '">' + escapeHtml(f) + '</option>').join('');
+    funcSelect.value = funcNames.includes(currentFunc) ? currentFunc : '';
+
+    // Client-side function name filter
+    let filtered = data.parameters;
+    if (funcFilter) {
+      filtered = data.parameters.filter(p => p.function_name === funcFilter);
+    }
+
+    if (filtered.length === 0) {
+      contentEl.innerHTML = '<div class="empty-state">无匹配参数</div>';
+      statusEl.textContent = '共 ' + data.parameters.length + ' 条参数，当前筛选 0 条';
+      return;
+    }
+
     const dirBadge = d => {
       if (d === 'input') return '<span class="dir-input">input</span>';
       if (d === 'output') return '<span class="dir-output">output</span>';
@@ -588,7 +619,7 @@ async function loadParams() {
     contentEl.innerHTML = '<table class="params-table"><thead><tr>' +
       '<th>算子名称</th><th>版本</th><th>函数名</th><th>参数名</th><th>类型</th><th>方向</th><th>描述</th><th>数据类型</th><th>格式</th><th>Shape</th>' +
       '</tr></thead><tbody>' +
-      data.parameters.map(p => '<tr>' +
+      filtered.map(p => '<tr>' +
         '<td><strong>' + escapeHtml(p.operator_name) + '</strong></td>' +
         '<td>v' + p.version + '</td>' +
         '<td>' + escapeHtml(p.function_name) + '</td>' +
@@ -602,7 +633,7 @@ async function loadParams() {
       '</tr>').join('') +
       '</tbody></table>';
 
-    statusEl.textContent = '共 ' + data.parameters.length + ' 条参数';
+    statusEl.textContent = '共 ' + data.parameters.length + ' 条参数' + (funcFilter ? '，当前筛选 ' + filtered.length + ' 条' : '');
   } catch (err) {
     statusEl.textContent = '加载失败: ' + err.message;
   }

@@ -148,17 +148,16 @@ def _parse_json_response(text: str) -> list[dict]:
 def _flatten_to_parameters(functions: list[dict]) -> list[dict]:
     """Convert LLM output to parameter records for DB persistence.
 
-    Each function-parameter pair becomes one record with direction inferred
-    from common naming conventions (output params typically contain "output"/"out").
+    Direction is left empty here — it will be extracted later from the
+    LLM-generated Markdown description table in param_desc_extract_node.
     """
     parameters: list[dict] = []
     for func in functions:
         func_name = func.get("function", "")
         for param_name in func.get("parameter", []):
-            direction = "output" if "out" in param_name.lower() else "input"
             parameters.append({
                 "function_name": func_name,
                 "param_name": param_name,
-                "direction": direction,
+                "direction": "",
             })
     return parameters

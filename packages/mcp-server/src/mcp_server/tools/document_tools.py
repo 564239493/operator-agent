@@ -256,8 +256,8 @@ def save_parameters(doc_id: int, parameters: list[dict]) -> dict:
                 param.get("direction", "input"),
                 param.get("description", ""),
                 param.get("usage_notes", ""),
-                param.get("dtype_desc", ""),
-                param.get("dformat_desc", ""),
+                param.get("data_type", ""),
+                param.get("data_format", ""),
                 param.get("shape", ""),
                 param.get("memory_desc", ""),
             ),
@@ -293,8 +293,8 @@ def query_params_by_doc_id(doc_id: int) -> list[dict]:
             "direction": r[4],
             "description": r[5],
             "usage_notes": r[6],
-            "dtype_desc": r[7],
-            "dformat_desc": r[8],
+            "data_type": r[7],
+            "data_format": r[8],
             "shape": r[9],
             "memory_desc": r[10],
         }
@@ -308,7 +308,7 @@ def update_param_descriptions(doc_id: int, updates: list[dict]) -> dict:
     Args:
         doc_id: Primary key of document_versions table.
         updates: List of dicts with keys: function_name, param_name,
-                 usage_notes, dtype_desc, dformat_desc, shape, memory_desc, description.
+                 direction, usage_notes, data_type, data_format, shape, memory_desc, description.
 
     Returns:
         dict with count of updated parameters.
@@ -318,14 +318,15 @@ def update_param_descriptions(doc_id: int, updates: list[dict]) -> dict:
     count = 0
     for u in updates:
         cursor = conn.execute(
-            "UPDATE parameters SET description = ?, usage_notes = ?, "
+            "UPDATE parameters SET direction = ?, description = ?, usage_notes = ?, "
             "dtype_desc = ?, dformat_desc = ?, shape = ?, memory_desc = ? "
             "WHERE doc_id = ? AND function_name = ? AND param_name = ?",
             (
+                u.get("direction", ""),
                 u.get("description", ""),
                 u.get("usage_notes", ""),
-                u.get("dtype_desc", ""),
-                u.get("dformat_desc", ""),
+                u.get("data_type", ""),
+                u.get("data_format", ""),
                 u.get("shape", ""),
                 u.get("memory_desc", ""),
                 doc_id,
@@ -383,8 +384,8 @@ def query_parameters(operator_name: str | None = None) -> list[dict]:
             "direction": r[6],
             "description": r[7],
             "usage_notes": r[8],
-            "dtype_desc": r[9],
-            "dformat_desc": r[10],
+            "data_type": r[9],
+            "data_format": r[10],
             "shape": r[11],
             "memory_desc": r[12],
         }

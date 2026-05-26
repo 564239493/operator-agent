@@ -215,7 +215,7 @@ def update_param_descs(doc_id: int, updates: str) -> str:
     Args:
         doc_id: Primary key of document_versions table.
         updates: JSON string — array of dicts with function_name, param_name,
-                 description, usage_notes, dtype_desc, dformat_desc, shape, memory_desc.
+                 description, usage_notes, data_type, data_format, shape, memory_desc.
 
     Returns:
         JSON string with count of updated parameters.
