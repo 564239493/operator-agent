@@ -1,0 +1,731 @@
+{
+  "parameter_constraints": [
+    {
+      "name": "gradOutput",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "3 <= len(gradOutput.shape) <= 4",
+                "dim_num": [
+                  [
+                    3,
+                    4
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "gradOutput.shape == indices.shape and ((self.shape[-2] % gradOutput.shape[-2] == 0 and self.shape[-1] % gradOutput.shape[-1] == 0) or all(dim <= 16777216 for dim in gradOutput.shape))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "3 <= len(gradOutput.shape) <= 4",
+                "dim_num": [
+                  [
+                    3,
+                    4
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "gradOutput.shape == indices.shape and ((self.shape[-2] % gradOutput.shape[-2] == 0 and self.shape[-1] % gradOutput.shape[-1] == 0) or all(dim <= 16777216 for dim in gradOutput.shape))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "self",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "3 <= len(self.shape) <= 4",
+                "dim_num": [
+                  [
+                    3,
+                    4
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "self.shape == gradInput.shape and self.shape[-2] * self.shape[-1] <= 2147483647 and ((self.shape[-2] % gradOutput.shape[-2] == 0 and self.shape[-1] % gradOutput.shape[-1] == 0) or all(dim <= 16777216 for dim in self.shape))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "3 <= len(self.shape) <= 4",
+                "dim_num": [
+                  [
+                    3,
+                    4
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "self.shape == gradInput.shape and self.shape[-2] * self.shape[-1] <= 2147483647 and ((self.shape[-2] % gradOutput.shape[-2] == 0 and self.shape[-1] % gradOutput.shape[-1] == 0) or all(dim <= 16777216 for dim in self.shape))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "indices",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "3 <= len(indices.shape) <= 4",
+                "dim_num": [
+                  [
+                    3,
+                    4
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "indices.shape == gradOutput.shape",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "3 <= len(indices.shape) <= 4",
+                "dim_num": [
+                  [
+                    3,
+                    4
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "indices.shape == gradOutput.shape",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "INT32",
+              "INT64"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "gradInput",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "3 <= len(gradInput.shape) <= 4",
+                "dim_num": [
+                  [
+                    3,
+                    4
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "gradInput.shape == self.shape and gradInput.shape[-2] * gradInput.shape[-1] <= 2147483647",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "3 <= len(gradInput.shape) <= 4",
+                "dim_num": [
+                  [
+                    3,
+                    4
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "gradInput.shape == self.shape and gradInput.shape[-2] * gradInput.shape[-1] <= 2147483647",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "workspaceSize",
+      "constraints": {
+        "shape": [],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "uint64_t*",
+              "uint64_t"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "uint64_t*",
+              "uint64_t"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "executor",
+      "constraints": {
+        "shape": [],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "aclOpExecutor**",
+              "aclOpExecutor*"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "aclOpExecutor**",
+              "aclOpExecutor*"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "workspace",
+      "constraints": {
+        "shape": [],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "void*"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "void*"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "stream",
+      "constraints": {
+        "shape": [],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "aclrtStream"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "aclrtStream"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    }
+  ],
+  "operation_name": "aclnnAdaptiveMaxPool2dBackward",
+  "description": "算子功能：正向自适应最大池化的反向传播，将梯度回填到每个自适应窗口最大值的坐标处，相同坐标处累加。\n正向计算公式：对于输入self维度$[N,C,H,W]$，N（Batch）表示批量大小、C（Channels）表示特征图通道、H（Height）表示特征图高度、W（Width）表示特征图宽度，outputSize值为$[H_o,W_o]$的场景，其输出output维度为$[N,C,H_o,W_o]$，索引indices维度为$[N,C,H_o,W_o]$，相应tensor中每个元素的计算公式如下：\n$$\nH_{left}^m = \\lfloor(m*H)/H_o\\rfloor \\\\\nH_{right}^m = \\lceil(m*H)/H_o\\rceil  \\\\\nW_{left}^n = \\lfloor(n*W)/W_o\\rfloor \\\\\nW_{right}^n = \\lceil(n*W)/W_o\\rceil  \\\\\noutput(N,C,l,m,n) = \\mathop{\\max}\\limits_{i \\in ,j\\in[H_{left}^m,H_{right}^m],k\\in[W_{left}^n,W_{right}^n]} input(N,C,i,j,k) \\\\\nindices(N,C,l,m,n) = \\mathop{\\arg\\max}\\limits_{i \\in ,j\\in[H_{left}^m,H_{right}^m],k\\in[W_{left}^n,W_{right}^n]} input(N,C,i,j,k)\n$$",
+  "api_flow": "two-step",
+  "inter_parameter_constraints": [
+    {
+      "type": "shape_equality",
+      "params": [
+        "gradOutput",
+        "indices"
+      ],
+      "expr": "gradOutput.shape == indices.shape",
+      "description": "gradOutput 与 indices 的 shape 必须一致。",
+      "source": "gradOutput",
+      "target": [
+        "indices"
+      ]
+    },
+    {
+      "type": "shape_equality",
+      "params": [
+        "self",
+        "gradInput"
+      ],
+      "expr": "self.shape == gradInput.shape",
+      "description": "self 与 gradInput 的 shape 必须一致。",
+      "source": "self",
+      "target": [
+        "gradInput"
+      ]
+    },
+    {
+      "type": "shape_dependency",
+      "params": [
+        "self",
+        "gradOutput"
+      ],
+      "expr": "self.shape[:-2] == gradOutput.shape[:-2]",
+      "description": "self 与 gradOutput 除后两个维度外的前置维度必须一致，对应相同的 batch 和 channel 维。",
+      "source": "self",
+      "target": [
+        "gradOutput"
+      ]
+    },
+    {
+      "type": "format_equality",
+      "params": [
+        "gradOutput",
+        "indices"
+      ],
+      "expr": "gradOutput.format == indices.format",
+      "description": "indices 的数据格式必须与 gradOutput 保持一致。",
+      "source": "gradOutput",
+      "target": [
+        "indices"
+      ]
+    },
+    {
+      "type": "format_equality",
+      "params": [
+        "self",
+        "gradInput"
+      ],
+      "expr": "self.format == gradInput.format",
+      "description": "gradInput 的数据格式必须与 self 保持一致。",
+      "source": "self",
+      "target": [
+        "gradInput"
+      ]
+    },
+    {
+      "type": "shape_value_dependency",
+      "params": [
+        "self",
+        "gradOutput"
+      ],
+      "expr": "((self.shape[-2] % gradOutput.shape[-2] == 0) and (self.shape[-1] % gradOutput.shape[-1] == 0)) or (self.shape[-2] <= 2**24 and self.shape[-1] <= 2**24 and gradOutput.shape[-2] <= 2**24 and gradOutput.shape[-1] <= 2**24)",
+      "description": "当 self 后两个维度分别能被 gradOutput 后两个维度整除时没有额外限制；非整除场景下，self 和 gradOutput 后两个维度的维度值都不能超过 2^24。",
+      "source": "self",
+      "target": [
+        "gradOutput"
+      ]
+    },
+    {
+      "type": "shape_value_dependency",
+      "params": [
+        "self",
+        "indices"
+      ],
+      "expr": "self.shape[-2] * self.shape[-1] <= 2**31 - 1",
+      "description": "self 的 height 与 width 的乘积不能超过 max int32，否则会超出 indices 的表示范围。",
+      "source": "self",
+      "target": [
+        "indices"
+      ]
+    }
+  ],
+  "platform_specifics": [
+    {
+      "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+      "description": "是否支持：√",
+      "constraint_detail": "supported == True"
+    },
+    {
+      "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+      "description": "是否支持：√",
+      "constraint_detail": "supported == True"
+    },
+    {
+      "platform": "Atlas 200I/500 A2 推理产品",
+      "description": "是否支持：×",
+      "constraint_detail": "supported == False"
+    },
+    {
+      "platform": "Atlas 推理系列产品",
+      "description": "是否支持：×",
+      "constraint_detail": "supported == False"
+    },
+    {
+      "platform": "Atlas 训练系列产品",
+      "description": "是否支持：×",
+      "constraint_detail": "supported == False"
+    }
+  ],
+  "other_parameters": [
+    {
+      "name": "N",
+      "type": "int64_t",
+      "description": "输入和输出按 NCHW 处理时的 batch 维度；当输入为 3 维时在第 0 维补 1。",
+      "constraints": [
+        {
+          "platform": "All",
+          "value": [],
+          "rule": "((len(self.shape) == 4 and len(gradInput.shape) == 4 and len(gradOutput.shape) == 4 and len(indices.shape) == 4 and self.shape[0] == N and gradInput.shape[0] == N and gradOutput.shape[0] == N and indices.shape[0] == N) or (len(self.shape) == 3 and len(gradInput.shape) == 3 and len(gradOutput.shape) == 3 and len(indices.shape) == 3 and N == 1))"
+        }
+      ]
+    },
+    {
+      "name": "C",
+      "type": "int64_t",
+      "description": "输入和输出按 NCHW 处理时的通道维度。",
+      "constraints": [
+        {
+          "platform": "All",
+          "value": [],
+          "rule": "self.shape[-3] == C and gradInput.shape[-3] == C and gradOutput.shape[-3] == C and indices.shape[-3] == C"
+        }
+      ]
+    },
+    {
+      "name": "H",
+      "type": "int64_t",
+      "description": "self 和 gradInput 的高度维度。",
+      "constraints": [
+        {
+          "platform": "All",
+          "value": [],
+          "rule": "self.shape[-2] == H and gradInput.shape[-2] == H and H * W <= 2147483647"
+        },
+        {
+          "platform": "All",
+          "value": [],
+          "rule": "(H % H_o == 0 and W % W_o == 0) or H <= 16777216"
+        }
+      ]
+    },
+    {
+      "name": "W",
+      "type": "int64_t",
+      "description": "self 和 gradInput 的宽度维度。",
+      "constraints": [
+        {
+          "platform": "All",
+          "value": [],
+          "rule": "self.shape[-1] == W and gradInput.shape[-1] == W and H * W <= 2147483647"
+        },
+        {
+          "platform": "All",
+          "value": [],
+          "rule": "(H % H_o == 0 and W % W_o == 0) or W <= 16777216"
+        }
+      ]
+    },
+    {
+      "name": "H_o",
+      "type": "int64_t",
+      "description": "gradOutput 和 indices 的高度维度，对应 outputSize[0]。",
+      "constraints": [
+        {
+          "platform": "All",
+          "value": [],
+          "rule": "gradOutput.shape[-2] == H_o and indices.shape[-2] == H_o and ((H % H_o == 0 and W % W_o == 0) or H_o <= 16777216)"
+        }
+      ]
+    },
+    {
+      "name": "W_o",
+      "type": "int64_t",
+      "description": "gradOutput 和 indices 的宽度维度，对应 outputSize[1]。",
+      "constraints": [
+        {
+          "platform": "All",
+          "value": [],
+          "rule": "gradOutput.shape[-1] == W_o and indices.shape[-1] == W_o and ((H % H_o == 0 and W % W_o == 0) or W_o <= 16777216)"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "api_name": "aclnnAdaptiveMaxPool2dBackwardGetWorkspaceSize",
+      "description": "获取计算所需的workspace大小以及包含算子计算流程的执行器，必须在执行接口前调用。第一段接口同时完成入参校验。",
+      "parameters": [
+        {
+          "name": "gradOutput",
+          "role": "input",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "梯度Tensor，Device侧aclTensor。数据类型支持FLOAT32、FLOAT16、BFLOAT16，和正向的输出shape一致。支持非连续的Tensor，数据格式支持ND，当输入是4维时，内部按照NCHW处理，当输入是3维时，在0维度处补1，内部按照NCHW处理。",
+          "format": "ND"
+        },
+        {
+          "name": "self",
+          "role": "input",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "正向的输入Tensor，Device侧aclTensor。数据类型支持FLOAT32、FLOAT16、BFLOAT16。支持非连续的Tensor，数据格式支持ND，当输入是4维时，内部按照NCHW处理，当输入是3维时，在0维度处补1，内部按照NCHW处理，与gradOutput一致。",
+          "format": "ND"
+        },
+        {
+          "name": "indices",
+          "role": "input",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "输入Tensor，是Device侧aclTensor。数据类型支持INT32，INT64。正向输入中最大元素的索引位置。数据格式与gradOutput保持一致。shape与gradOutput一致。",
+          "format": "ND"
+        },
+        {
+          "name": "gradInput",
+          "role": "output",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "反向输出Tensor，是Device侧aclTensor。数据类型支持FLOAT32、FLOAT16、BFLOAT16，shape与self保持一致。支持非连续的Tensor，数据格式与self保持一致。",
+          "format": "ND"
+        },
+        {
+          "name": "workspaceSize",
+          "role": "output",
+          "type": "uint64_t",
+          "is_optional": false,
+          "description": "返回需要在Device侧申请的workspace大小。",
+          "format": null
+        },
+        {
+          "name": "executor",
+          "role": "output",
+          "type": "aclOpExecutor",
+          "is_optional": false,
+          "description": "返回op执行器，包含了算子计算流程。",
+          "format": null
+        }
+      ]
+    },
+    {
+      "api_name": "aclnnAdaptiveMaxPool2dBackward",
+      "description": "执行自适应最大池化2d反向传播计算，使用第一段接口返回的workspace和executor在指定Stream上执行。",
+      "parameters": [
+        {
+          "name": "workspace",
+          "role": "input",
+          "type": "void",
+          "is_optional": false,
+          "description": "在Device侧申请的workspace内存地址。",
+          "format": null
+        },
+        {
+          "name": "workspaceSize",
+          "role": "input",
+          "type": "uint64_t",
+          "is_optional": false,
+          "description": "在Device侧申请的workspace大小，由第一段接口aclnnAdaptiveMaxPool2dBackwardGetWorkspaceSize获取。",
+          "format": null
+        },
+        {
+          "name": "executor",
+          "role": "input",
+          "type": "aclOpExecutor",
+          "is_optional": false,
+          "description": "op执行器，包含了算子计算流程。",
+          "format": null
+        },
+        {
+          "name": "stream",
+          "role": "input",
+          "type": "aclrtStream",
+          "is_optional": false,
+          "description": "指定执行任务的Stream。",
+          "format": null
+        }
+      ]
+    }
+  ],
+  "dtype_map": []
+}

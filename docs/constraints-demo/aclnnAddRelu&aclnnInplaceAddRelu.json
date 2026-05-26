@@ -1,0 +1,815 @@
+{
+  "parameter_constraints": [
+    {
+      "name": "self",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "all(a == b or a == 1 or b == 1 for a, b in zip([1] * (max(len(self.shape), len(other.shape)) - len(self.shape)) + [*self.shape], [1] * (max(len(self.shape), len(other.shape)) - len(other.shape)) + [*other.shape]))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "all(a == b or a == 1 or b == 1 for a, b in zip([1] * (max(len(self.shape), len(other.shape)) - len(self.shape)) + [*self.shape], [1] * (max(len(self.shape), len(other.shape)) - len(other.shape)) + [*other.shape]))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "all(a == b or a == 1 or b == 1 for a, b in zip([1] * (max(len(self.shape), len(other.shape)) - len(self.shape)) + [*self.shape], [1] * (max(len(self.shape), len(other.shape)) - len(other.shape)) + [*other.shape]))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "types": [
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "other",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "all(a == b or a == 1 or b == 1 for a, b in zip([1] * (max(len(self.shape), len(other.shape)) - len(self.shape)) + [*self.shape], [1] * (max(len(self.shape), len(other.shape)) - len(other.shape)) + [*other.shape])) or (len(selfRef.shape) >= len(other.shape) and all(b == 1 or a == b for a, b in zip([*selfRef.shape], [1] * (len(selfRef.shape) - len(other.shape)) + [*other.shape])))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "all(a == b or a == 1 or b == 1 for a, b in zip([1] * (max(len(self.shape), len(other.shape)) - len(self.shape)) + [*self.shape], [1] * (max(len(self.shape), len(other.shape)) - len(other.shape)) + [*other.shape])) or (len(selfRef.shape) >= len(other.shape) and all(b == 1 or a == b for a, b in zip([*selfRef.shape], [1] * (len(selfRef.shape) - len(other.shape)) + [*other.shape])))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "all(a == b or a == 1 or b == 1 for a, b in zip([1] * (max(len(self.shape), len(other.shape)) - len(self.shape)) + [*self.shape], [1] * (max(len(self.shape), len(other.shape)) - len(other.shape)) + [*other.shape])) or (len(selfRef.shape) >= len(other.shape) and all(b == 1 or a == b for a, b in zip([*selfRef.shape], [1] * (len(selfRef.shape) - len(other.shape)) + [*other.shape])))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "types": [
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "alpha",
+      "constraints": {
+        "shape": [],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "types": [
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "out",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "len(out.shape) == max(len(self.shape), len(other.shape)) and all((a == b or a == 1 or b == 1) and c == max(a, b) for a, b, c in zip([1] * (len(out.shape) - len(self.shape)) + [*self.shape], [1] * (len(out.shape) - len(other.shape)) + [*other.shape], [*out.shape]))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "len(out.shape) == max(len(self.shape), len(other.shape)) and all((a == b or a == 1 or b == 1) and c == max(a, b) for a, b, c in zip([1] * (len(out.shape) - len(self.shape)) + [*self.shape], [1] * (len(out.shape) - len(other.shape)) + [*other.shape], [*out.shape]))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "len(out.shape) == max(len(self.shape), len(other.shape)) and all((a == b or a == 1 or b == 1) and c == max(a, b) for a, b, c in zip([1] * (len(out.shape) - len(self.shape)) + [*self.shape], [1] * (len(out.shape) - len(other.shape)) + [*other.shape], [*out.shape]))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "types": [
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "workspaceSize",
+      "constraints": {
+        "shape": [],
+        "data_types": [],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "executor",
+      "constraints": {
+        "shape": [],
+        "data_types": [],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "workspace",
+      "constraints": {
+        "shape": [],
+        "data_types": [],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "stream",
+      "constraints": {
+        "shape": [],
+        "data_types": [],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "selfRef",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "len(selfRef.shape) >= len(other.shape) and all(b == 1 or a == b for a, b in zip([*selfRef.shape], [1] * (len(selfRef.shape) - len(other.shape)) + [*other.shape]))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "len(selfRef.shape) >= len(other.shape) and all(b == 1 or a == b for a, b in zip([*selfRef.shape], [1] * (len(selfRef.shape) - len(other.shape)) + [*other.shape]))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "constraint": [
+              {
+                "structure": "axis_value",
+                "rule": "len(selfRef.shape) >= len(other.shape) and all(b == 1 or a == b for a, b in zip([*selfRef.shape], [1] * (len(selfRef.shape) - len(other.shape)) + [*other.shape]))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "BFLOAT16",
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "types": [
+              "FLOAT16",
+              "FLOAT32",
+              "INT8",
+              "UINT8",
+              "INT16",
+              "INT32",
+              "INT64"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas 训练系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    }
+  ],
+  "operation_name": "aclnnAddRelu&aclnnInplaceAddRelu",
+  "description": "接口功能：完成加法计算后得到结果再进行激活。计算公式：out_i = self_i + alpha × other_i；relu(self) = { self, self > 0；0, self ≤ 0 }。",
+  "api_flow": "two-step",
+  "inter_parameter_constraints": [
+    {
+      "type": "type_dependency",
+      "params": [
+        "self",
+        "other"
+      ],
+      "expr": "infer_dtype(self.dtype, other.dtype) is not None",
+      "description": "self和other的数据类型需要满足数据类型推导规则。",
+      "source": null,
+      "target": null
+    },
+    {
+      "type": "shape_broadcast",
+      "params": [
+        "self",
+        "other"
+      ],
+      "expr": "broadcastable(self.shape, other.shape)",
+      "description": "self和other的shape需要满足broadcast关系。",
+      "source": null,
+      "target": null
+    },
+    {
+      "type": "type_dependency",
+      "params": [
+        "alpha",
+        "self",
+        "other"
+      ],
+      "expr": "can_cast(alpha.dtype, infer_dtype(self.dtype, other.dtype))",
+      "description": "alpha的数据类型需要能转换为self和other推导后的数据类型。",
+      "source": null,
+      "target": null
+    },
+    {
+      "type": "type_dependency",
+      "params": [
+        "self",
+        "other",
+        "out"
+      ],
+      "expr": "can_cast(infer_dtype(self.dtype, other.dtype), out.dtype)",
+      "description": "out的数据类型需要能够接收self和other推导后的数据类型。",
+      "source": null,
+      "target": null
+    },
+    {
+      "type": "shape_dependency",
+      "params": [
+        "self",
+        "other",
+        "out"
+      ],
+      "expr": "out.shape == broadcast_shape(self.shape, other.shape)",
+      "description": "out的shape需要等于self和other广播后的shape。",
+      "source": null,
+      "target": null
+    },
+    {
+      "type": "type_dependency",
+      "params": [
+        "selfRef",
+        "other"
+      ],
+      "expr": "infer_dtype(selfRef.dtype, other.dtype) is not None",
+      "description": "selfRef和other的数据类型需要满足数据类型推导规则。",
+      "source": null,
+      "target": null
+    },
+    {
+      "type": "shape_broadcast",
+      "params": [
+        "selfRef",
+        "other"
+      ],
+      "expr": "broadcastable(selfRef.shape, other.shape)",
+      "description": "selfRef和other的shape需要满足broadcast关系。",
+      "source": null,
+      "target": null
+    },
+    {
+      "type": "type_dependency",
+      "params": [
+        "selfRef",
+        "other"
+      ],
+      "expr": "can_cast(infer_dtype(selfRef.dtype, other.dtype), selfRef.dtype)",
+      "description": "selfRef的数据类型需要能够接收selfRef和other推导后的数据类型。",
+      "source": null,
+      "target": null
+    },
+    {
+      "type": "type_dependency",
+      "params": [
+        "alpha",
+        "selfRef",
+        "other"
+      ],
+      "expr": "can_cast(alpha.dtype, infer_dtype(selfRef.dtype, other.dtype))",
+      "description": "alpha的数据类型需要能转换为selfRef和other推导后的数据类型。",
+      "source": null,
+      "target": null
+    },
+    {
+      "type": "shape_dependency",
+      "params": [
+        "selfRef",
+        "other"
+      ],
+      "expr": "broadcast_shape(selfRef.shape, other.shape) == selfRef.shape",
+      "description": "广播后的shape需要等于selfRef的shape，以支持原地写回。",
+      "source": null,
+      "target": null
+    }
+  ],
+  "platform_specifics": [
+    {
+      "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+      "description": "产品支持情况：√。在 self、other、alpha、out、selfRef 参数说明中，数据类型支持 BFLOAT16、FLOAT16、FLOAT32、INT8、UINT8、INT16、INT32、INT64。",
+      "constraint_detail": "supported == True and params == ['self','other','alpha','out','selfRef'] and dtypes == ['BFLOAT16','FLOAT16','FLOAT32','INT8','UINT8','INT16','INT32','INT64']"
+    },
+    {
+      "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+      "description": "产品支持情况：√。在 self、other、alpha、out、selfRef 参数说明中，数据类型支持 BFLOAT16、FLOAT16、FLOAT32、INT8、UINT8、INT16、INT32、INT64。",
+      "constraint_detail": "supported == True and params == ['self','other','alpha','out','selfRef'] and dtypes == ['BFLOAT16','FLOAT16','FLOAT32','INT8','UINT8','INT16','INT32','INT64']"
+    },
+    {
+      "platform": "Atlas 200I/500 A2 推理产品",
+      "description": "产品支持情况：×。",
+      "constraint_detail": "supported == False"
+    },
+    {
+      "platform": "Atlas 推理系列产品",
+      "description": "产品支持情况：×。",
+      "constraint_detail": "supported == False"
+    },
+    {
+      "platform": "Atlas 训练系列产品",
+      "description": "产品支持情况：√。在 self、other、alpha、out、selfRef 参数说明中，数据类型支持 FLOAT16、FLOAT32、INT8、UINT8、INT16、INT32、INT64。",
+      "constraint_detail": "supported == True and params == ['self','other','alpha','out','selfRef'] and dtypes == ['FLOAT16','FLOAT32','INT8','UINT8','INT16','INT32','INT64']"
+    }
+  ],
+  "other_parameters": [],
+  "functions": [
+    {
+      "api_name": "aclnnAddReluGetWorkspaceSize",
+      "description": "第一段接口，获取aclnnAddRelu计算所需的workspace大小以及包含算子计算流程的执行器。完成入参校验。",
+      "parameters": [
+        {
+          "name": "self",
+          "role": "input",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "公式中的输入`self`，表示待转换的目标张量，Device侧的aclTensor，数据类型与other的数据类型需满足数据类型推导规则（参见互推导关系），shape需要与other满足broadcast关系。支持非连续的Tensor，数据格式支持ND。",
+          "format": "ND"
+        },
+        {
+          "name": "other",
+          "role": "input",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "公式中的输入`other`，数据类型与self的数据类型需满足数据类型推导规则（参见互推导关系），shape需要与self满足broadcast关系。支持非连续的Tensor，数据格式支持ND。",
+          "format": "ND"
+        },
+        {
+          "name": "alpha",
+          "role": "input",
+          "type": "aclScalar",
+          "is_optional": false,
+          "description": "公式中的`alpha`，数据类型需要可转换成self与other推导后的数据类型。",
+          "format": null
+        },
+        {
+          "name": "out",
+          "role": "output",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "公式中的`out`，数据类型需要是self与other推导之后可转换的数据类型，shape需要是self与other broadcast之后的shape。支持非连续的Tensor，数据格式支持ND。",
+          "format": "ND"
+        },
+        {
+          "name": "workspaceSize",
+          "role": "output",
+          "type": "uint64_t",
+          "is_optional": false,
+          "description": "返回需要在Device侧申请的workspace大小。",
+          "format": null
+        },
+        {
+          "name": "executor",
+          "role": "output",
+          "type": "aclOpExecutor",
+          "is_optional": false,
+          "description": "返回op执行器，包含了算子计算流程。",
+          "format": null
+        }
+      ]
+    },
+    {
+      "api_name": "aclnnAddRelu",
+      "description": "第二段接口，执行aclnnAddRelu计算。",
+      "parameters": [
+        {
+          "name": "workspace",
+          "role": "input",
+          "type": "void",
+          "is_optional": false,
+          "description": "在Device侧申请的workspace内存地址。",
+          "format": null
+        },
+        {
+          "name": "workspaceSize",
+          "role": "input",
+          "type": "uint64_t",
+          "is_optional": false,
+          "description": "在Device侧申请的workspace大小，由第一段接口aclnnAddReluGetWorkspaceSize获取。",
+          "format": null
+        },
+        {
+          "name": "executor",
+          "role": "input",
+          "type": "aclOpExecutor",
+          "is_optional": false,
+          "description": "op执行器，包含了算子计算流程。",
+          "format": null
+        },
+        {
+          "name": "stream",
+          "role": "input",
+          "type": "aclrtStream",
+          "is_optional": false,
+          "description": "指定执行任务的Stream。",
+          "format": null
+        }
+      ]
+    },
+    {
+      "api_name": "aclnnInplaceAddReluGetWorkspaceSize",
+      "description": "第一段接口，获取aclnnInplaceAddRelu计算所需的workspace大小以及包含算子计算流程的执行器。完成入参校验。",
+      "parameters": [
+        {
+          "name": "selfRef",
+          "role": "output",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "输入输出tensor，即公式中的self与out，表示待转换的目标张量，Device侧的aclTensor，数据类型与other的数据类型需满足数据类型推导规则（参见互推导关系），且需要是推导之后可转换的数据类型。支持非连续的Tensor，数据格式支持ND。",
+          "format": "ND"
+        },
+        {
+          "name": "other",
+          "role": "input",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "公式中的输入`other`，数据类型与selfRef的数据类型需满足数据类型推导规则（参见互推导关系），shape需要与selfRef满足broadcast关系。支持非连续的Tensor，数据格式支持ND。",
+          "format": "ND"
+        },
+        {
+          "name": "alpha",
+          "role": "input",
+          "type": "aclScalar",
+          "is_optional": false,
+          "description": "公式中的`alpha`，数据类型需要可转换成selfRef与other推导后的数据类型。",
+          "format": null
+        },
+        {
+          "name": "workspaceSize",
+          "role": "output",
+          "type": "uint64_t",
+          "is_optional": false,
+          "description": "返回需要在Device侧申请的workspace大小。",
+          "format": null
+        },
+        {
+          "name": "executor",
+          "role": "output",
+          "type": "aclOpExecutor",
+          "is_optional": false,
+          "description": "返回op执行器，包含了算子计算流程。",
+          "format": null
+        }
+      ]
+    },
+    {
+      "api_name": "aclnnInplaceAddRelu",
+      "description": "第二段接口，执行aclnnInplaceAddRelu计算。",
+      "parameters": [
+        {
+          "name": "workspace",
+          "role": "input",
+          "type": "void",
+          "is_optional": false,
+          "description": "在Device侧申请的workspace内存地址。",
+          "format": null
+        },
+        {
+          "name": "workspaceSize",
+          "role": "input",
+          "type": "uint64_t",
+          "is_optional": false,
+          "description": "在Device侧申请的workspace大小，由第一段接口aclnnInplaceAddReluGetWorkspaceSize获取。",
+          "format": null
+        },
+        {
+          "name": "executor",
+          "role": "input",
+          "type": "aclOpExecutor",
+          "is_optional": false,
+          "description": "op执行器，包含了算子计算流程。",
+          "format": null
+        },
+        {
+          "name": "stream",
+          "role": "input",
+          "type": "aclrtStream",
+          "is_optional": false,
+          "description": "指定执行任务的Stream。",
+          "format": null
+        }
+      ]
+    }
+  ],
+  "dtype_map": []
+}

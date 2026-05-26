@@ -1,0 +1,1322 @@
+{
+  "parameter_constraints": [
+    {
+      "name": "x",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (ND)",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(x.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "(dstType != 3 or x.shape[-1] % 8 == 0) and (dstType != 29 or x.shape[-1] % 2 == 0)",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "len(x.shape) == 3",
+                "dim_num": [
+                  3
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "x.shape[-1] % 8 == 0",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (ND)",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(x.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "(dstType != 3 or x.shape[-1] % 8 == 0) and (dstType != 29 or x.shape[-1] % 2 == 0)",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "len(x.shape) == 3",
+                "dim_num": [
+                  3
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "x.shape[-1] % 8 == 0",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(x.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (ND)",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "types": [
+              "FLOAT32"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (ND)",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "types": [
+              "FLOAT32"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "types": [
+              "FLOAT32",
+              "FLOAT16"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "scale",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(scale.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "(len(scale.shape) == 1 and (scale.shape[0] == x.shape[axis] or scale.shape[0] == 1)) or (len(scale.shape) == len(x.shape) and (scale.shape[axis] == x.shape[axis] or scale.shape[axis] == 1) and all(scale.shape[i] == 1 for i in range(len(scale.shape)) if i != axis and i != len(scale.shape) + axis))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(scale.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "(len(scale.shape) == 1 and (scale.shape[0] == x.shape[axis] or scale.shape[0] == 1)) or (len(scale.shape) == len(x.shape) and (scale.shape[axis] == x.shape[axis] or scale.shape[axis] == 1) and all(scale.shape[i] == 1 for i in range(len(scale.shape)) if i != axis and i != len(scale.shape) + axis))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(scale.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "(len(scale.shape) == 1 and (scale.shape[0] == x.shape[axis] or scale.shape[0] == 1)) or (len(scale.shape) == len(x.shape) and (scale.shape[axis] == x.shape[axis] or scale.shape[axis] == 1) and all(scale.shape[i] == 1 for i in range(len(scale.shape)) if i != axis and i != len(scale.shape) + axis))",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (ND)",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "types": [
+              "FLOAT32"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (ND)",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "types": [
+              "FLOAT32"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "types": [
+              "FLOAT32",
+              "FLOAT16"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "value": [
+              1
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "value": [
+              1
+            ]
+          }
+        ],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "offset",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(offset.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "offset.shape == scale.shape",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(offset.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "offset.shape == scale.shape",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(offset.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "offset.shape == scale.shape",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (ND)",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "types": [
+              "FLOAT32"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (ND)",
+            "types": [
+              "FLOAT32",
+              "FLOAT16",
+              "BFLOAT16"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "types": [
+              "FLOAT32"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "types": [
+              "FLOAT32",
+              "FLOAT16"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "value": [
+              "[]"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "value": [
+              "[]"
+            ]
+          }
+        ],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "sqrtMode",
+      "constraints": {
+        "shape": [],
+        "data_types": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "BOOL"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "BOOL"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "types": [
+              "BOOL"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "value": [
+              true,
+              false
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "value": [
+              true,
+              false
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "value": [
+              true,
+              false
+            ]
+          }
+        ],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "roundMode",
+      "constraints": {
+        "shape": [],
+        "data_types": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "STRING"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "STRING"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "types": [
+              "STRING"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (ND)",
+            "value": [
+              "round",
+              "ceil",
+              "trunc",
+              "floor"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "value": [
+              "round"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (ND)",
+            "value": [
+              "round",
+              "ceil",
+              "trunc",
+              "floor"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "value": [
+              "round"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "value": [
+              "round",
+              "ceil",
+              "trunc",
+              "floor"
+            ]
+          }
+        ],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "dstType",
+      "constraints": {
+        "shape": [],
+        "data_types": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "INT32"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "INT32"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "types": [
+              "INT32"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (ND)",
+            "value": [
+              2,
+              3,
+              29
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "value": [
+              3
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (ND)",
+            "value": [
+              2,
+              3,
+              29
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "value": [
+              3
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "value": [
+              2
+            ]
+          }
+        ],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "axis",
+      "constraints": {
+        "shape": [],
+        "data_types": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "types": [
+              "INT32"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "types": [
+              "INT32"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "types": [
+              "INT32"
+            ]
+          }
+        ],
+        "memory": [],
+        "allowed_values": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (ND)",
+            "value": [
+              "-2",
+              "-1",
+              "len(x.shape) - 2",
+              "len(x.shape) - 1"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "value": [
+              "-1"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (ND)",
+            "value": [
+              "-2",
+              "-1",
+              "len(x.shape) - 2",
+              "len(x.shape) - 1"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "value": [
+              "-1"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "value": [
+              "-1",
+              "len(x.shape) - 1"
+            ]
+          }
+        ],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "y",
+      "constraints": {
+        "shape": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(y.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "(dstType == 3 and len(y.shape) == len(x.shape) and all(y.shape[i] == x.shape[i] for i in range(len(x.shape) - 1)) and y.shape[-1] * 8 == x.shape[-1]) or (dstType != 3 and y.shape == x.shape)",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(y.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "(dstType == 3 and len(y.shape) == len(x.shape) and all(y.shape[i] == x.shape[i] for i in range(len(x.shape) - 1)) and y.shape[-1] * 8 == x.shape[-1]) or (dstType != 3 and y.shape == x.shape)",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "constraint": [
+              {
+                "structure": "dims",
+                "rule": "1 <= len(y.shape) <= 8",
+                "dim_num": [
+                  [
+                    1,
+                    8
+                  ]
+                ],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              },
+              {
+                "structure": "axis_value",
+                "rule": "(dstType == 3 and len(y.shape) == len(x.shape) and all(y.shape[i] == x.shape[i] for i in range(len(x.shape) - 1)) and y.shape[-1] * 8 == x.shape[-1]) or (dstType != 3 and y.shape == x.shape)",
+                "dim_num": [],
+                "dim_valid_value": [],
+                "dim_invalid_value": []
+              }
+            ]
+          }
+        ],
+        "data_types": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (ND)",
+            "types": [
+              "INT8",
+              "INT32",
+              "INT4"
+            ]
+          },
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品 (NZ)",
+            "types": [
+              "INT32"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (ND)",
+            "types": [
+              "INT8",
+              "INT32",
+              "INT4"
+            ]
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品 (NZ)",
+            "types": [
+              "INT32"
+            ]
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "types": [
+              "INT8"
+            ]
+          }
+        ],
+        "memory": [
+          {
+            "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+            "discontinuous": true
+          },
+          {
+            "platform": "Atlas 推理系列产品",
+            "discontinuous": true
+          }
+        ],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "workspaceSize",
+      "constraints": {
+        "shape": [],
+        "data_types": [],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "executor",
+      "constraints": {
+        "shape": [],
+        "data_types": [],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "workspace",
+      "constraints": {
+        "shape": [],
+        "data_types": [],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    },
+    {
+      "name": "stream",
+      "constraints": {
+        "shape": [],
+        "data_types": [],
+        "memory": [],
+        "allowed_values": [],
+        "not_allowed_values": []
+      }
+    }
+  ],
+  "operation_name": "aclnnAscendQuantV3",
+  "description": "接口功能：对输入x进行量化操作，支持设置axis以指定scale和offset对应的轴，scale和offset的shape需要满足和axis指定x的轴相等或1。axis当前支持设置最后两个维度。计算公式：sqrtMode为false时，y = round((x * scale) + offset)；sqrtMode为true时，y = round((x * scale * scale) + offset)。",
+  "api_flow": "two-step",
+  "inter_parameter_constraints": [
+    {
+      "type": "shape_dependency",
+      "params": [
+        "x",
+        "scale",
+        "axis"
+      ],
+      "expr": "((len(scale.shape) == 1) and (scale.shape[0] in (x.shape[axis], 1))) or ((len(scale.shape) == len(x.shape)) and (scale.shape[axis] in (x.shape[axis], 1)) and all(scale.shape[i] == 1 for i in range(len(x.shape)) if i != axis))",
+      "description": "scale 的 shape 依赖 x 的 shape 和 axis：当 scale 为 1 维时，其第 0 维必须等于 x 的第 axis 维或 1；当 scale 为多维张量时，其维数必须与 x 一致，且第 axis 维等于 x 的第 axis 维或 1，其余维度为 1。",
+      "source": "x",
+      "target": [
+        "scale"
+      ]
+    },
+    {
+      "type": "type_equality",
+      "params": [
+        "x",
+        "scale"
+      ],
+      "expr": "scale.dtype == x.dtype",
+      "description": "scale 的数据类型必须与 x 一致。",
+      "source": "x",
+      "target": [
+        "scale"
+      ]
+    },
+    {
+      "type": "format_equality",
+      "params": [
+        "x",
+        "scale"
+      ],
+      "expr": "scale.format == x.format",
+      "description": "scale 的数据格式必须与 x 一致。",
+      "source": "x",
+      "target": [
+        "scale"
+      ]
+    },
+    {
+      "type": "type_equality",
+      "params": [
+        "scale",
+        "offset"
+      ],
+      "expr": "offset.dtype == scale.dtype",
+      "description": "offset 的数据类型必须与 scale 一致。",
+      "source": "scale",
+      "target": [
+        "offset"
+      ]
+    },
+    {
+      "type": "shape_equality",
+      "params": [
+        "scale",
+        "offset"
+      ],
+      "expr": "offset.shape == scale.shape",
+      "description": "offset 的 shape 必须与 scale 一致。",
+      "source": "scale",
+      "target": [
+        "offset"
+      ]
+    },
+    {
+      "type": "presence_dependency",
+      "params": [
+        "x",
+        "offset"
+      ],
+      "expr": "x.format != 'NZ' or offset.is_empty",
+      "description": "当 x 的数据格式为 NZ 时，offset 必须为空 Tensor。",
+      "source": "x",
+      "target": [
+        "offset"
+      ]
+    },
+    {
+      "type": "value_dependency",
+      "params": [
+        "x",
+        "scale"
+      ],
+      "expr": "x.format != 'NZ' or all(v == 1 for v in scale.values)",
+      "description": "当 x 的数据格式为 NZ 时，scale 的所有元素值都必须为 1。",
+      "source": "x",
+      "target": [
+        "scale"
+      ]
+    },
+    {
+      "type": "value_dependency",
+      "params": [
+        "x",
+        "roundMode"
+      ],
+      "expr": "x.format != 'NZ' or roundMode == 'round'",
+      "description": "当 x 的数据格式为 NZ 时，roundMode 只能取 'round'。",
+      "source": "x",
+      "target": [
+        "roundMode"
+      ]
+    },
+    {
+      "type": "value_dependency",
+      "params": [
+        "x",
+        "dstType"
+      ],
+      "expr": "x.format != 'NZ' or dstType == 3",
+      "description": "当 x 的数据格式为 NZ 时，dstType 只能取 3（INT32）。",
+      "source": "x",
+      "target": [
+        "dstType"
+      ]
+    },
+    {
+      "type": "value_dependency",
+      "params": [
+        "x",
+        "axis"
+      ],
+      "expr": "axis in (-1, len(x.shape) - 1) or (len(x.shape) >= 2 and axis in (-2, len(x.shape) - 2))",
+      "description": "axis 只能指定 x 的最后一个维度，或在 x 维数不少于 2 时指定倒数第二个维度。",
+      "source": "x",
+      "target": [
+        "axis"
+      ]
+    },
+    {
+      "type": "value_dependency",
+      "params": [
+        "x",
+        "axis"
+      ],
+      "expr": "x.format != 'NZ' or axis == -1",
+      "description": "当 x 的数据格式为 NZ 时，axis 必须为 -1。",
+      "source": "x",
+      "target": [
+        "axis"
+      ]
+    },
+    {
+      "type": "shape_dependency",
+      "params": [
+        "x",
+        "dstType"
+      ],
+      "expr": "(dstType != 3 or x.shape[-1] % 8 == 0) and (dstType != 29 or x.shape[-1] % 2 == 0)",
+      "description": "x 的尾轴大小依赖 dstType：当 dstType 为 3（INT32）时，x 的最后一维必须能被 8 整除；当 dstType 为 29（INT4）时，x 的最后一维必须能被 2 整除。",
+      "source": "dstType",
+      "target": [
+        "x"
+      ]
+    },
+    {
+      "type": "type_dependency",
+      "params": [
+        "dstType",
+        "y"
+      ],
+      "expr": "((dstType == 2) and (y.dtype == 'INT8')) or ((dstType == 3) and (y.dtype == 'INT32')) or ((dstType == 29) and (y.dtype == 'INT4')) or ((dstType == 34) and (y.dtype == 'HIFLOAT8')) or ((dstType == 35) and (y.dtype == 'FLOAT8_E5M2')) or ((dstType == 36) and (y.dtype == 'FLOAT8_E4M3FN'))",
+      "description": "y 的数据类型由 dstType 决定。",
+      "source": "dstType",
+      "target": [
+        "y"
+      ]
+    },
+    {
+      "type": "shape_dependency",
+      "params": [
+        "x",
+        "dstType",
+        "y"
+      ],
+      "expr": "((dstType == 3) and (len(y.shape) == len(x.shape)) and (y.shape[-1] * 8 == x.shape[-1]) and all(y.shape[i] == x.shape[i] for i in range(len(x.shape) - 1))) or ((dstType != 3) and (y.shape == x.shape))",
+      "description": "y 的 shape 依赖 x 和 dstType：当 dstType 为 3（INT32）时，y 的尾轴大小必须为 x 尾轴大小的 1/8，其他维度与 x 一致；其他类型时，y 的 shape 必须与 x 一致。",
+      "source": "dstType",
+      "target": [
+        "y"
+      ]
+    }
+  ],
+  "platform_specifics": [
+    {
+      "platform": "<term>Atlas A3 训练系列产品/Atlas A3 推理系列产品</term>",
+      "description": "是否支持：√",
+      "constraint_detail": ""
+    },
+    {
+      "platform": "<term>Atlas A2 训练系列产品/Atlas A2 推理系列产品</term>",
+      "description": "是否支持：√",
+      "constraint_detail": ""
+    },
+    {
+      "platform": "<term>Atlas 200I/500 A2 推理产品</term>",
+      "description": "是否支持：×",
+      "constraint_detail": ""
+    },
+    {
+      "platform": "<term>Atlas 推理系列产品</term>",
+      "description": "是否支持：√",
+      "constraint_detail": ""
+    },
+    {
+      "platform": "<term>Atlas 训练系列产品</term>",
+      "description": "是否支持：×",
+      "constraint_detail": ""
+    },
+    {
+      "platform": "<term>Atlas A2 训练系列产品/Atlas A2 推理系列产品</term>、<term>Atlas A3 训练系列产品/Atlas A3 推理系列产品</term>",
+      "description": "参数`x`、`scale`、`offset`的数据格式为NZ时，数据类型仅支持FLOAT32。",
+      "constraint_detail": "(x.format != \"NZ\" or x.dtype == \"FLOAT32\") and (scale.format != \"NZ\" or scale.dtype == \"FLOAT32\") and (offset.format != \"NZ\" or offset.dtype == \"FLOAT32\")"
+    },
+    {
+      "platform": "<term>Atlas A2 训练系列产品/Atlas A2 推理系列产品</term>、<term>Atlas A3 训练系列产品/Atlas A3 推理系列产品</term>",
+      "description": "出参`y`的数据类型仅支持INT8，INT32，INT4。当数据格式为NZ时，数据类型支持INT32。",
+      "constraint_detail": "y.dtype in (\"INT8\", \"INT32\", \"INT4\") and (y.format != \"NZ\" or y.dtype == \"INT32\")"
+    },
+    {
+      "platform": "<term>Atlas A2 训练系列产品/Atlas A2 推理系列产品</term>、<term>Atlas A3 训练系列产品/Atlas A3 推理系列产品</term>",
+      "description": "入参`roundMode`：支持取值round，ceil，trunc，floor。当输入`x`的数据格式为NZ时，支持取值round。",
+      "constraint_detail": "roundMode in (\"round\", \"ceil\", \"trunc\", \"floor\") and (x.format != \"NZ\" or roundMode == \"round\")"
+    },
+    {
+      "platform": "<term>Atlas A2 训练系列产品/Atlas A2 推理系列产品</term>、<term>Atlas A3 训练系列产品/Atlas A3 推理系列产品</term>",
+      "description": "入参`dstType`支持取值2，3，29，分别表示INT8、INT32、INT4。当输入`x`的数据格式为NZ时，支持取值3，表示INT32。",
+      "constraint_detail": "dstType in (2, 3, 29) and (x.format != \"NZ\" or dstType == 3)"
+    },
+    {
+      "platform": "<term>Atlas A2 训练系列产品/Atlas A2 推理系列产品</term>、<term>Atlas A3 训练系列产品/Atlas A3 推理系列产品</term>",
+      "description": "入参`axis`支持指定x的最后两个维度（假设输入x维度是xDimNum，axis取值范围是[-2，-1]或[xDimNum-2，xDimNum-1]）。",
+      "constraint_detail": "axis in (-2, -1, len(x.shape) - 2, len(x.shape) - 1)"
+    },
+    {
+      "platform": "<term>Atlas 推理系列产品</term>",
+      "description": "入参`x`、`scale`、`offset`的数据类型不支持BFLOAT16，数据格式不支持NZ。",
+      "constraint_detail": "(x.dtype != \"BFLOAT16\" and x.format != \"NZ\") and (scale.dtype != \"BFLOAT16\" and scale.format != \"NZ\") and (offset.dtype != \"BFLOAT16\" and offset.format != \"NZ\")"
+    },
+    {
+      "platform": "<term>Atlas 推理系列产品</term>",
+      "description": "出参`y`数据类型仅支持INT8，数据格式不支持NZ。",
+      "constraint_detail": "y.dtype == \"INT8\" and y.format != \"NZ\""
+    },
+    {
+      "platform": "<term>Atlas 推理系列产品</term>",
+      "description": "入参`roundMode`：支持取值round，ceil，trunc，floor。",
+      "constraint_detail": "roundMode in (\"round\", \"ceil\", \"trunc\", \"floor\")"
+    },
+    {
+      "platform": "<term>Atlas 推理系列产品</term>",
+      "description": "入参`dstType`仅支持取值2，表示INT8。",
+      "constraint_detail": "dstType == 2"
+    },
+    {
+      "platform": "<term>Atlas 推理系列产品</term>",
+      "description": "入参`axis`只支持指定x的最后一个维度（假设输入x维度是xDimNum，axis取值是-1或xDimNum-1）。",
+      "constraint_detail": "axis in (-1, len(x.shape) - 1)"
+    }
+  ],
+  "other_parameters": [
+    {
+      "name": "xDimNum",
+      "type": "int32_t",
+      "description": "输入x的维数，用于描述axis可指定的维度位置。",
+      "constraints": [
+        {
+          "platform": "All",
+          "value": [
+            [
+              1,
+              8
+            ]
+          ],
+          "rule": null
+        },
+        {
+          "platform": "Atlas A2 训练系列产品/Atlas A2 推理系列产品",
+          "value": [],
+          "rule": "(-2 <= axis <= -1) or (xDimNum - 2 <= axis <= xDimNum - 1)"
+        },
+        {
+          "platform": "Atlas A3 训练系列产品/Atlas A3 推理系列产品",
+          "value": [],
+          "rule": "(-2 <= axis <= -1) or (xDimNum - 2 <= axis <= xDimNum - 1)"
+        },
+        {
+          "platform": "Atlas 推理系列产品",
+          "value": [],
+          "rule": "(axis == -1) or (axis == xDimNum - 1)"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "api_name": "aclnnAscendQuantV3GetWorkspaceSize",
+      "description": "第一步：获取执行量化计算所需的workspace大小以及包含算子计算流程的executor。该接口还会完成入参校验。",
+      "parameters": [
+        {
+          "name": "x",
+          "role": "input",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "需要执行量化的输入。对应公式中的`x`。",
+          "format": [
+            "ND",
+            "NZ"
+          ]
+        },
+        {
+          "name": "scale",
+          "role": "input",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "量化中的scale值。对应公式中的`scale`。",
+          "format": [
+            "ND",
+            "NZ"
+          ]
+        },
+        {
+          "name": "offset",
+          "role": "input",
+          "type": "aclTensor",
+          "is_optional": true,
+          "description": "可选参数，反量化中的offset值。对应公式中的`offset`。",
+          "format": [
+            "ND",
+            "NZ"
+          ]
+        },
+        {
+          "name": "sqrtMode",
+          "role": "input",
+          "type": "bool",
+          "is_optional": false,
+          "description": "指定scale参与计算的逻辑。对应公式中的`sqrtMode`。",
+          "format": null
+        },
+        {
+          "name": "roundMode",
+          "role": "input",
+          "type": "char",
+          "is_optional": false,
+          "description": "指定cast到INT8输出的转换方式。",
+          "format": null
+        },
+        {
+          "name": "dstType",
+          "role": "input",
+          "type": "int32_t",
+          "is_optional": false,
+          "description": "指定输出的数据类型。",
+          "format": null
+        },
+        {
+          "name": "axis",
+          "role": "input",
+          "type": "int32_t",
+          "is_optional": false,
+          "description": "指定`scale`和`offset`对应`x`的维度。当输入`x`的数据格式为NZ时，取值为-1。",
+          "format": null
+        },
+        {
+          "name": "y",
+          "role": "output",
+          "type": "aclTensor",
+          "is_optional": false,
+          "description": "量化的计算输出。对应公式中的`y`。",
+          "format": [
+            "ND",
+            "NZ"
+          ]
+        },
+        {
+          "name": "workspaceSize",
+          "role": "output",
+          "type": "uint64_t",
+          "is_optional": false,
+          "description": "返回需要在Device侧申请的workspace大小。",
+          "format": null
+        },
+        {
+          "name": "executor",
+          "role": "output",
+          "type": "aclOpExecutor",
+          "is_optional": false,
+          "description": "返回op执行器，包含了算子计算流程。",
+          "format": null
+        }
+      ]
+    },
+    {
+      "api_name": "aclnnAscendQuantV3",
+      "description": "第二步：执行量化计算。使用第一段接口获取的workspace和executor在指定stream上执行任务。",
+      "parameters": [
+        {
+          "name": "workspace",
+          "role": "input",
+          "type": "void",
+          "is_optional": false,
+          "description": "在Device侧申请的workspace内存地址。",
+          "format": null
+        },
+        {
+          "name": "workspaceSize",
+          "role": "input",
+          "type": "uint64_t",
+          "is_optional": false,
+          "description": "在Device侧申请的workspace大小，由第一段接口aclnnAscendQuantV3GetWorkspaceSize获取。",
+          "format": null
+        },
+        {
+          "name": "executor",
+          "role": "input",
+          "type": "aclOpExecutor",
+          "is_optional": false,
+          "description": "op执行器，包含了算子计算流程。",
+          "format": null
+        },
+        {
+          "name": "stream",
+          "role": "input",
+          "type": "aclrtStream",
+          "is_optional": false,
+          "description": "指定执行任务的Stream。",
+          "format": null
+        }
+      ]
+    }
+  ],
+  "dtype_map": []
+}
