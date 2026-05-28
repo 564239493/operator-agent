@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 _mcp_client = MCPClient()
 
 _CONCURRENCY_LIMIT = 5
-_MAX_PARAMS_PER_BATCH = 15
 
 _JSON_BLOCK_RE = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.IGNORECASE)
 
@@ -26,12 +25,15 @@ _JSON_BLOCK_RE = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.IGNORECASE)
 async def shape_extract_node(state: PipelineState) -> dict[str, Any]:
     """Extract unconditional shape values from parameter descriptions and persist to DB.
 
+    Reads parameters from state (populated by param_desc_extract) instead of
+    making a redundant MCP query. Each parameter gets its own LLM call
+    for precise extraction, with controlled concurrency.
+
     Flow:
-    1. Query parameters by doc_id via MCP
+    1. Read parameters from state.parameters (no MCP query needed)
     2. Filter to parameters with non-empty descriptions
-    3. Group by function_name, batch each group to one LLM call
-    4. LLM extracts unconditional shape values (ignoring conditional ones)
-    5. Batch update shape field via MCP
+    3. Concurrent LLM call per parameter (Semaphore controlled)
+    4. Batch update shape field via MCP
     """
     doc_id = state.get("doc_id", 0)
     operator_name = state.get("operator_name", "")
@@ -43,41 +45,26 @@ async def shape_extract_node(state: PipelineState) -> dict[str, Any]:
         return {"error": None}
 
     try:
-        params = await _mcp_client.query_params_by_doc_id(doc_id)
+        params = state.get("parameters", [])
         if not params:
-            logger.info("ShapeExtract: no parameters for doc_id=%s, skipping", doc_id)
+            logger.info("ShapeExtract: no parameters in state for doc_id=%s, skipping", doc_id)
             return {"error": None}
 
-        # Only process parameters that have a description to extract shape from
         described = [p for p in params if p.get("description")]
         if not described:
             logger.info("ShapeExtract: no parameters with descriptions for doc_id=%s, skipping", doc_id)
             return {"error": None}
 
-        # Group by function_name for batched LLM calls
-        groups: dict[str, list[dict]] = {}
-        for p in described:
-            fn = p.get("function_name", "")
-            groups.setdefault(fn, []).append(p)
-
         llm = _create_llm()
         sem = asyncio.Semaphore(_CONCURRENCY_LIMIT)
 
-        async def _extract_group(fn_name: str, group_params: list[dict]) -> list[dict]:
+        async def _extract_one(param: dict) -> dict | None:
             async with sem:
-                return await _extract_shapes(llm, fn_name, group_params)
+                return await _extract_shape(llm, param)
 
-        # Process all groups concurrently
-        group_results = await asyncio.gather(
-            *[_extract_group(fn, g) for fn, g in groups.items()]
-        )
+        results = await asyncio.gather(*[_extract_one(p) for p in described])
 
-        all_updates: list[dict] = []
-        for result in group_results:
-            all_updates.extend(result)
-
-        # Only keep updates with non-empty shape
-        shape_updates = [u for u in all_updates if u.get("shape")]
+        shape_updates = [r for r in results if r is not None and r.get("shape")]
         if shape_updates:
             result = await _mcp_client.update_param_shape(doc_id, shape_updates)
             logger.info(
@@ -105,34 +92,24 @@ def _create_llm() -> ChatOpenAI:
     )
 
 
-async def _extract_shapes(
-    llm: ChatOpenAI, function_name: str, params: list[dict]
-) -> list[dict]:
-    """Call LLM to extract unconditional shape values for a group of parameters.
+async def _extract_shape(llm: ChatOpenAI, param: dict) -> dict | None:
+    """Call LLM to extract shape for a single parameter."""
+    param_name = param.get("param_name", "")
+    function_name = param.get("function_name", "")
+    description = param.get("description", "")
 
-    Returns a list of dicts with function_name, param_name, and shape keys.
-    """
-    # Build params_text: each parameter's name and its markdown description
-    entries = []
-    for p in params:
-        entries.append(f"--- 参数: {p['param_name']} ---\n{p['description']}")
-    params_text = "\n\n".join(entries)
-
-    prompt = SHAPE_EXTRACT_PROMPT.format(params_text=params_text)
+    prompt = SHAPE_EXTRACT_PROMPT.format(param_name=param_name, params_text=description)
     response = await llm.ainvoke(prompt)
     text = response.content if hasattr(response, "content") else str(response)
 
-    extracted = _parse_shape_response(text)
-
-    # Attach function_name to each result
-    for item in extracted:
-        item["function_name"] = function_name
-    return extracted
+    result = _parse_shape_response(text)
+    if result:
+        result["function_name"] = function_name
+    return result
 
 
-def _parse_shape_response(text: str) -> list[dict]:
-    """Parse LLM JSON response into list of {param_name, shape} dicts."""
-    # Strip markdown code blocks
+def _parse_shape_response(text: str) -> dict | None:
+    """Parse LLM JSON response into {param_name, shape} dict."""
     match = _JSON_BLOCK_RE.search(text)
     if match:
         text = match.group(1)
@@ -140,20 +117,19 @@ def _parse_shape_response(text: str) -> list[dict]:
 
     try:
         data = json.loads(text)
-        if isinstance(data, list):
+        if isinstance(data, dict):
             return data
     except json.JSONDecodeError:
         pass
 
-    # Try to find JSON array anywhere in the text
-    array_match = re.search(r"\[[\s\S]*\]", text)
-    if array_match:
+    obj_match = re.search(r"\{[^{}]*\}", text)
+    if obj_match:
         try:
-            data = json.loads(array_match.group(0))
-            if isinstance(data, list):
+            data = json.loads(obj_match.group(0))
+            if isinstance(data, dict):
                 return data
         except json.JSONDecodeError:
             pass
 
     logger.warning("ShapeExtract: failed to parse LLM response as JSON: %s", text[:200])
-    return []
+    return None

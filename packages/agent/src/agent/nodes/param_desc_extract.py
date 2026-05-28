@@ -127,7 +127,7 @@ async def param_desc_extract_node(state: PipelineState) -> dict[str, Any]:
         else:
             logger.info("ParamDescExtract: no descriptions extracted for doc_id=%s", doc_id)
 
-        return {"error": None}
+        return {"parameters": all_updates, "error": None}
 
     except Exception as e:
         logger.exception("ParamDescExtract failed for %s", operator_name)

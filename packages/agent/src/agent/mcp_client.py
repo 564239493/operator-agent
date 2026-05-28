@@ -132,3 +132,10 @@ class MCPClient:
             "doc_id": doc_id,
             "updates": json.dumps(updates, ensure_ascii=False),
         })
+
+    async def update_param_dtype(self, doc_id: int, updates: list[dict]) -> dict:
+        """Batch update only the dtype_desc field of parameters."""
+        return await self._call_tool("update_param_dtype", {
+            "doc_id": doc_id,
+            "updates": json.dumps(updates, ensure_ascii=False),
+        })
