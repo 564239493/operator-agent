@@ -110,7 +110,7 @@ async def dtype_extract_node(state: PipelineState) -> dict[str, Any]:
                         "function_name": function_name,
                         "step_name": _STEP_NAME,
                         "message": f"参数 {param_name} {_STEP_LABEL} 完成",
-                        "result_preview": (result.get("dtype", "") or "")[:200] if result else "",
+                        "result_preview": result.get("dtype", "") or "" if result else "",
                         "has_result": bool(result and result.get("dtype")),
                     })
 

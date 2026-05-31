@@ -110,7 +110,7 @@ async def shape_extract_node(state: PipelineState) -> dict[str, Any]:
                         "function_name": function_name,
                         "step_name": _STEP_NAME,
                         "message": f"参数 {param_name} {_STEP_LABEL} 完成",
-                        "result_preview": (result.get("shape", "") or "")[:200],
+                        "result_preview": result.get("shape", "") or "",
                         "has_result": bool(result and result.get("shape")),
                     })
 

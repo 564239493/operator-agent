@@ -94,7 +94,7 @@ async def src_content_extract_node(state: PipelineState) -> dict[str, Any]:
                         "function_name": function_name,
                         "step_name": _STEP_NAME,
                         "message": f"参数 {param_name} {_STEP_LABEL} 完成",
-                        "result_preview": src_content[:200] if src_content else "",
+                        "result_preview": src_content if src_content else "",
                         "has_result": bool(src_content),
                     })
 

@@ -110,7 +110,7 @@ async def optional_extract_node(state: PipelineState) -> dict[str, Any]:
                         "function_name": function_name,
                         "step_name": _STEP_NAME,
                         "message": f"参数 {param_name} {_STEP_LABEL} 完成",
-                        "result_preview": str(result.get("is_optional", ""))[:200] if result else "",
+                        "result_preview": str(result.get("is_optional", "")) if result else "",
                         "has_result": bool(result),
                     })
 

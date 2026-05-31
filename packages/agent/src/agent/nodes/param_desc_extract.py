@@ -129,7 +129,7 @@ async def param_desc_extract_node(state: PipelineState) -> dict[str, Any]:
                         "function_name": function_name,
                         "step_name": _STEP_NAME,
                         "message": f"参数 {param_name} {_STEP_LABEL} 完成",
-                        "result_preview": desc[:200],
+                        "result_preview": desc,
                         "has_result": True,
                     })
 
