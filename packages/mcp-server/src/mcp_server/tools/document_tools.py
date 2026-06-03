@@ -205,6 +205,42 @@ def do_save_product_support(doc_id: int, product_support_data: list[dict]) -> No
     conn.commit()
 
 
+def save_function_explanation_summary(doc_id: int, summary: dict) -> dict:
+    """Save function explanation summary to document_versions."""
+    db = get_db()
+    conn = db.conn
+    conn.execute(
+        "UPDATE document_versions "
+        "SET function_explanation_summary = ? WHERE id = ?",
+        (json.dumps(summary, ensure_ascii=False), doc_id),
+    )
+    conn.commit()
+    return {"saved": True}
+
+
+def get_function_explanation_summary(doc_id: int) -> dict:
+    """Retrieve function_explanation_summary from document_versions by doc_id.
+
+    Args:
+        doc_id: Primary key of document_versions table.
+
+    Returns:
+        Parsed JSON dict (keys: description, formula, key_points, source_text),
+        or empty dict if not found.
+    """
+    db = get_db()
+    row = db.conn.execute(
+        "SELECT function_explanation_summary FROM document_versions WHERE id = ?",
+        (doc_id,),
+    ).fetchone()
+    if not row or not row[0] or row[0] == "{}":
+        return {}
+    try:
+        return json.loads(row[0])
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+
 def list_all_operators() -> list[dict]:
     """List all registered operators with their latest version."""
     db = get_db()
@@ -279,7 +315,9 @@ def query_params_by_doc_id(doc_id: int) -> list[dict]:
     conn = db.conn
     rows = conn.execute(
         "SELECT id, function_name, param_name, param_type, direction, "
-        "src_content, description, dtype_desc, dformat_desc, shape, is_optional "
+        "src_content, description, dtype_desc, dformat_desc, shape, is_optional, "
+        "is_support_discontinuous, array_length, param_desc, allowed_range_value, "
+        "param_constraint "
         "FROM parameters WHERE doc_id = ? ORDER BY function_name, direction, param_name",
         (doc_id,),
     ).fetchall()
@@ -296,6 +334,11 @@ def query_params_by_doc_id(doc_id: int) -> list[dict]:
             "data_format": r[8],
             "shape": r[9],
             "is_optional": r[10],
+            "is_support_discontinuous": r[11],
+            "array_length": r[12],
+            "param_desc": r[13],
+            "allowed_range_value": r[14],
+            "param_constraint": r[15],
         }
         for r in rows
     ]
@@ -529,6 +572,35 @@ def update_param_allowed_range(doc_id: int, updates: list[dict]) -> dict:
             "UPDATE parameters SET allowed_range_value = ? "
             "WHERE doc_id = ? AND function_name = ? AND param_name = ?",
             (u.get("allowed_range_value", "[]"), doc_id, u.get("function_name", ""), u.get("param_name", "")),
+        )
+        count += cursor.rowcount
+    conn.commit()
+    return {"updated": count}
+
+
+def update_param_constraint(doc_id: int, updates: list[dict]) -> dict:
+    """Batch update only the param_constraint field of parameters.
+
+    Args:
+        doc_id: Primary key of document_versions table.
+        updates: List of dicts with keys: function_name, param_name, param_constraint.
+
+    Returns:
+        dict with count of updated parameters.
+    """
+    db = get_db()
+    conn = db.conn
+    count = 0
+    for u in updates:
+        cursor = conn.execute(
+            "UPDATE parameters SET param_constraint = ? "
+            "WHERE doc_id = ? AND function_name = ? AND param_name = ?",
+            (
+                u.get("param_constraint", "{}"),
+                doc_id,
+                u.get("function_name", ""),
+                u.get("param_name", ""),
+            ),
         )
         count += cursor.rowcount
     conn.commit()
@@ -1195,7 +1267,9 @@ def save_constraints_result(
     doc_id: int,
     operator_name: str,
     product_support: str,
+    platform_support: str,
     function_explanation: str,
+    function_signature: str = "",
 ) -> dict:
     """Save assembled constraints result for a document version.
 
@@ -1205,7 +1279,9 @@ def save_constraints_result(
         doc_id: Primary key of document_versions table.
         operator_name: Operator name.
         product_support: JSON string of product support list.
+        platform_support: JSON string of supported platform name list.
         function_explanation: JSON string of function-grouped constraint data.
+        function_signature: full_signature of the GetWorkspaceSize function.
 
     Returns:
         dict with saved flag.
@@ -1214,9 +1290,11 @@ def save_constraints_result(
     conn = db.conn
     conn.execute(
         "INSERT OR REPLACE INTO constraints_result "
-        "(doc_id, operator_name, product_support, function_explanation) "
-        "VALUES (?, ?, ?, ?)",
-        (doc_id, operator_name, product_support, function_explanation),
+        "(doc_id, operator_name, product_support, platform_support, "
+        "function_explanation, function_signature) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (doc_id, operator_name, product_support, platform_support,
+         function_explanation, function_signature),
     )
     conn.commit()
     return {"saved": True}
@@ -1230,7 +1308,8 @@ def query_constraints_result(operator_name: str | None = None) -> list[dict]:
     if operator_name:
         rows = conn.execute(
             "SELECT cr.id, cr.doc_id, cr.operator_name, dv.version, "
-            "cr.product_support, cr.function_explanation "
+            "cr.product_support, cr.platform_support, cr.function_explanation, "
+            "cr.function_signature "
             "FROM constraints_result cr "
             "JOIN document_versions dv ON cr.doc_id = dv.id "
             "WHERE cr.operator_name = ? ORDER BY dv.version DESC",
@@ -1239,7 +1318,8 @@ def query_constraints_result(operator_name: str | None = None) -> list[dict]:
     else:
         rows = conn.execute(
             "SELECT cr.id, cr.doc_id, cr.operator_name, dv.version, "
-            "cr.product_support, cr.function_explanation "
+            "cr.product_support, cr.platform_support, cr.function_explanation, "
+            "cr.function_signature "
             "FROM constraints_result cr "
             "JOIN document_versions dv ON cr.doc_id = dv.id "
             "ORDER BY cr.operator_name, dv.version DESC",
@@ -1252,7 +1332,9 @@ def query_constraints_result(operator_name: str | None = None) -> list[dict]:
             "operator_name": r[2],
             "version": r[3],
             "product_support": json.loads(r[4]) if r[4] else [],
-            "function_explanation": json.loads(r[5]) if r[5] else {},
+            "platform_support": json.loads(r[5]) if r[5] else [],
+            "function_explanation": json.loads(r[6]) if r[6] else {},
+            "function_signature": r[7] or "",
         }
         for r in rows
     ]

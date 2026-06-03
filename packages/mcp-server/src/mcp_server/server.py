@@ -64,6 +64,12 @@ from mcp_server.tools.document_tools import (
     save_constraints_result as _save_constraints_result,
 )
 from mcp_server.tools.document_tools import (
+    get_function_explanation_summary as _get_fn_expl_summary,
+)
+from mcp_server.tools.document_tools import (
+    save_function_explanation_summary as _save_fn_expl,
+)
+from mcp_server.tools.document_tools import (
     save_determinism as _save_determinism,
 )
 from mcp_server.tools.document_tools import (
@@ -89,6 +95,9 @@ from mcp_server.tools.document_tools import (
 )
 from mcp_server.tools.document_tools import (
     update_param_attrs as _update_param_attrs,
+)
+from mcp_server.tools.document_tools import (
+    update_param_constraint as _update_param_constraint,
 )
 from mcp_server.tools.document_tools import (
     update_param_dformat as _update_param_dformat,
@@ -437,6 +446,23 @@ def update_param_array_length(doc_id: int, updates: str) -> str:
 
 
 @mcp.tool()
+def update_param_constraint(doc_id: int, updates: str) -> str:
+    """Batch update only the param_constraint field of parameters.
+
+    Args:
+        doc_id: Primary key of document_versions table.
+        updates: JSON string — array of dicts with function_name, param_name,
+                 param_constraint.
+
+    Returns:
+        JSON string with count of updated parameters.
+    """
+    data = json.loads(updates)
+    result = _update_param_constraint(doc_id, data)
+    return json.dumps(result, ensure_ascii=False)
+
+
+@mcp.tool()
 def query_params(operator_name: str | None = None) -> str:
     """Query parameters from the database, optionally filtered by operator name.
 
@@ -713,7 +739,9 @@ def save_constraints_result(
     doc_id: int,
     operator_name: str,
     product_support: str,
+    platform_support: str,
     function_explanation: str,
+    function_signature: str = "",
 ) -> str:
     """Save assembled constraints result for a document version.
 
@@ -721,13 +749,16 @@ def save_constraints_result(
         doc_id: Primary key of document_versions table.
         operator_name: Operator name.
         product_support: JSON string of product support list.
+        platform_support: JSON string of supported platform name list.
         function_explanation: JSON string of function-grouped constraint data.
+        function_signature: full_signature of the GetWorkspaceSize function.
 
     Returns:
         JSON string with saved flag.
     """
     result = _save_constraints_result(
-        doc_id, operator_name, product_support, function_explanation,
+        doc_id, operator_name, product_support, platform_support,
+        function_explanation, function_signature,
     )
     return json.dumps(result, ensure_ascii=False)
 
@@ -743,6 +774,36 @@ def query_constraints_result(operator_name: str | None = None) -> str:
         JSON array of constraints result objects.
     """
     result = _query_constraints_result(operator_name)
+    return json.dumps(result, ensure_ascii=False)
+
+
+@mcp.tool()
+def save_function_explanation_summary(doc_id: int, summary: str) -> str:
+    """Save function explanation summary for a document version.
+
+    Args:
+        doc_id: Primary key of document_versions table.
+        summary: JSON string with description, formula, key_points, source_text.
+
+    Returns:
+        JSON string with saved flag.
+    """
+    data = json.loads(summary)
+    result = _save_fn_expl(doc_id, data)
+    return json.dumps(result, ensure_ascii=False)
+
+
+@mcp.tool()
+def get_function_explanation_summary(doc_id: int) -> str:
+    """Retrieve function explanation summary for a document version.
+
+    Args:
+        doc_id: Primary key of document_versions table.
+
+    Returns:
+        JSON string with keys: description, formula, key_points, source_text.
+    """
+    result = _get_fn_expl_summary(doc_id)
     return json.dumps(result, ensure_ascii=False)
 
 

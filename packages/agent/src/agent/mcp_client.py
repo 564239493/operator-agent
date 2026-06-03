@@ -182,6 +182,13 @@ class MCPClient:
             "updates": json.dumps(updates, ensure_ascii=False),
         })
 
+    async def update_param_constraint(self, doc_id: int, updates: list[dict]) -> dict:
+        """Batch update only the param_constraint field of parameters."""
+        return await self._call_tool("update_param_constraint", {
+            "doc_id": doc_id,
+            "updates": json.dumps(updates, ensure_ascii=False),
+        })
+
     async def save_param_relations(self, doc_id: int, relations: list[dict]) -> dict:
         """Batch save parameter relations for a document version."""
         return await self._call_tool("save_relations", {
@@ -220,6 +227,24 @@ class MCPClient:
             "doc_id": doc_id,
             "platforms": json.dumps(platforms, ensure_ascii=False),
         })
+
+    async def save_function_explanation_summary(
+        self, doc_id: int, summary: dict
+    ) -> str:
+        """Save function explanation summary for a document version."""
+        return await self._call_tool(
+            "save_function_explanation_summary", {
+                "doc_id": doc_id,
+                "summary": json.dumps(summary, ensure_ascii=False),
+            }
+        )
+
+    async def get_function_explanation_summary(self, doc_id: int) -> dict:
+        """Retrieve function explanation summary for a document version."""
+        result = await self._call_tool("get_function_explanation_summary", {
+            "doc_id": doc_id,
+        })
+        return result if isinstance(result, dict) else {}
 
     async def query_platform_support_by_operator(self, operator_name: str | None = None) -> list[dict]:
         """Query platform support info, optionally filtered by operator name."""
@@ -291,14 +316,18 @@ class MCPClient:
         doc_id: int,
         operator_name: str,
         product_support: str,
+        platform_support: str,
         function_explanation: str,
+        function_signature: str = "",
     ) -> dict:
         """Save assembled constraints result for a document version."""
         return await self._call_tool("save_constraints_result", {
             "doc_id": doc_id,
             "operator_name": operator_name,
             "product_support": product_support,
+            "platform_support": platform_support,
             "function_explanation": function_explanation,
+            "function_signature": function_signature,
         })
 
     async def query_constraints_result(self, operator_name: str | None = None) -> list[dict]:

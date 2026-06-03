@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS document_versions (
     content_hash    TEXT NOT NULL,
     parsed_data     TEXT,
     product_support TEXT,
+    function_explanation_summary TEXT NOT NULL DEFAULT '{}',
     created_at      TEXT DEFAULT (datetime('now')),
     UNIQUE(operator_id, version)
 );
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS parameters (
     array_length    TEXT NOT NULL DEFAULT 'N/A',
     param_desc      TEXT NOT NULL DEFAULT '',
     allowed_range_value TEXT NOT NULL DEFAULT '[]',
+    param_constraint    TEXT NOT NULL DEFAULT '{}',
     created_at      TEXT DEFAULT (datetime('now')),
     UNIQUE(doc_id, function_name, param_name)
 );
@@ -119,7 +121,9 @@ CREATE TABLE IF NOT EXISTS constraints_result (
     doc_id               INTEGER NOT NULL REFERENCES document_versions(id) UNIQUE,
     operator_name        TEXT NOT NULL,
     product_support      TEXT NOT NULL DEFAULT '[]',
+    platform_support     TEXT NOT NULL DEFAULT '[]',
     function_explanation TEXT NOT NULL DEFAULT '{}',
+    function_signature   TEXT NOT NULL DEFAULT '',
     created_at           TEXT DEFAULT (datetime('now'))
 );
 

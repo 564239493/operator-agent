@@ -227,6 +227,38 @@ class Database:
             )
         except sqlite3.OperationalError:
             pass
+        # 迁移：v16 — document_versions 新增 function_explanation_summary 列
+        try:
+            self._conn.execute(
+                "ALTER TABLE document_versions ADD COLUMN function_explanation_summary "
+                "TEXT NOT NULL DEFAULT '{}'"
+            )
+        except sqlite3.OperationalError:
+            pass
+        # 迁移：v17 — constraints_result 新增 platform_support 列
+        try:
+            self._conn.execute(
+                "ALTER TABLE constraints_result ADD COLUMN platform_support "
+                "TEXT NOT NULL DEFAULT '[]'"
+            )
+        except sqlite3.OperationalError:
+            pass
+        # 迁移：v18 — constraints_result 新增 function_signature 列
+        try:
+            self._conn.execute(
+                "ALTER TABLE constraints_result ADD COLUMN function_signature "
+                "TEXT NOT NULL DEFAULT ''"
+            )
+        except sqlite3.OperationalError:
+            pass
+        # 迁移：v19 — parameters 新增 param_constraint 列
+        try:
+            self._conn.execute(
+                "ALTER TABLE parameters ADD COLUMN param_constraint "
+                "TEXT NOT NULL DEFAULT '{}'"
+            )
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
 
     @property

@@ -90,3 +90,24 @@ class TestBuildFunctionExplanation:
         keys = list(result.keys())
         assert keys == ["aFunc", "zFunc"]
 
+    def test_description_injected_at_top_level(self):
+        params = [{"function_name": "aclnnFoo", "param_name": "x"}]
+        result = _build_function_explanation(
+            params, [], [], [], [],
+            description="这是一个测试算子描述",
+        )
+        assert result["description"] == "这是一个测试算子描述"
+        assert "aclnnFoo" in result
+        assert len(result["aclnnFoo"]["params"]) == 1
+
+    def test_empty_description_omitted(self):
+        result = _build_function_explanation([], [], [], [], [])
+        assert "description" not in result
+
+    def test_description_with_no_functions(self):
+        result = _build_function_explanation(
+            [], [], [], [], [],
+            description="仅有描述无函数",
+        )
+        assert result == {"description": "仅有描述无函数"}
+
