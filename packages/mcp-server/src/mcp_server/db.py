@@ -259,6 +259,14 @@ class Database:
             )
         except sqlite3.OperationalError:
             pass
+        # 迁移：v20 — param_relations 新增 relation_object 列
+        try:
+            self._conn.execute(
+                "ALTER TABLE param_relations ADD COLUMN relation_object "
+                "TEXT NOT NULL DEFAULT '{}'"
+            )
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
 
     @property

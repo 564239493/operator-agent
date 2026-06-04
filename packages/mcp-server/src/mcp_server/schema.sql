@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS param_relations (
     params          TEXT NOT NULL,
     param_optional  TEXT NOT NULL DEFAULT '{}',
     source_citation TEXT NOT NULL,
+    relation_object TEXT NOT NULL DEFAULT '{}',
     created_at      TEXT DEFAULT (datetime('now'))
 );
 
@@ -124,6 +125,7 @@ CREATE TABLE IF NOT EXISTS constraints_result (
     platform_support     TEXT NOT NULL DEFAULT '[]',
     function_explanation TEXT NOT NULL DEFAULT '{}',
     function_signature   TEXT NOT NULL DEFAULT '',
+    return_codes         TEXT NOT NULL DEFAULT '[]',
     created_at           TEXT DEFAULT (datetime('now'))
 );
 

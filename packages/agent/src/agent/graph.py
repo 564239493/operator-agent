@@ -7,7 +7,7 @@ InitDoc → [ProductSupport ∥ ParseParams ∥ FunctionSignatureExtract
        → [ShapeExtract ∥ DtypeExtract ∥ DFormatExtract ∥ OptionalExtract
           ∥ ParamAttrExtract ∥ ArrayLengthExtract ∥ AllowedRangeExtract
           ∥ ParamRelationExtract]
-       → BuildParamConstraint → AssembleResult → END
+       → BuildParamRelations → BuildParamConstraint → AssembleResult → END
 """
 
 import logging
@@ -19,6 +19,7 @@ from agent.nodes.allowed_range_extract import allowed_range_extract_node
 from agent.nodes.array_length_extract import array_length_extract_node
 from agent.nodes.assemble_result import assemble_result_node
 from agent.nodes.build_param_constraint import build_param_constraint_node
+from agent.nodes.build_param_relations import build_param_relations_node
 from agent.nodes.determinism_extract import determinism_extract_node
 from agent.nodes.dformat_extract import dformat_extract_node
 from agent.nodes.dtype_combo_extract import dtype_combo_extract_node
@@ -61,8 +62,11 @@ def create_pipeline_graph() -> CompiledStateGraph:
                 ParamDescExtract → [ShapeExtract ∥ DtypeExtract ∥ DFormatExtract
                                     ∥ OptionalExtract ∥ ParamAttrExtract
                                     ∥ ArrayLengthExtract ∥ AllowedRangeExtract
-                                    ∥ ParamRelationExtract]
-               → BuildParamConstraint → AssembleResult → END]
+                                    ∥ ParamRelationExtract
+                                    ∥ ReturnCodeExtract ∥ DeterminismExtract
+                                    ∥ DtypeComboExtract]
+               → BuildParamRelations → BuildParamConstraint
+               → AssembleResult → END]
 
     Returns a LangGraph ``CompiledStateGraph`` using ``PipelineState``.
     """
@@ -85,6 +89,7 @@ def create_pipeline_graph() -> CompiledStateGraph:
     graph.add_node("determinism_extract", determinism_extract_node)
     graph.add_node("dtype_combo_extract", dtype_combo_extract_node)
     graph.add_node("build_param_constraint", build_param_constraint_node)
+    graph.add_node("build_param_relations", build_param_relations_node)
     graph.add_node("assemble_result", assemble_result_node)
 
     param_relation_subgraph = create_param_relation_subgraph()
@@ -118,7 +123,8 @@ def create_pipeline_graph() -> CompiledStateGraph:
     graph.add_edge("return_code_extract", "build_param_constraint")
     graph.add_edge("determinism_extract", "build_param_constraint")
     graph.add_edge("dtype_combo_extract", "build_param_constraint")
-    graph.add_edge("param_relation_extract", "build_param_constraint")
+    graph.add_edge("param_relation_extract", "build_param_relations")
+    graph.add_edge("build_param_relations", "build_param_constraint")
     graph.add_edge("build_param_constraint", "assemble_result")
     graph.add_edge("assemble_result", END)
     return graph.compile(name="operator-pipeline")

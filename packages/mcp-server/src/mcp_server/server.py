@@ -100,6 +100,9 @@ from mcp_server.tools.document_tools import (
     update_param_constraint as _update_param_constraint,
 )
 from mcp_server.tools.document_tools import (
+    update_param_relation_objects as _update_param_relation_objects,
+)
+from mcp_server.tools.document_tools import (
     update_param_dformat as _update_param_dformat,
 )
 from mcp_server.tools.document_tools import (
@@ -459,6 +462,22 @@ def update_param_constraint(doc_id: int, updates: str) -> str:
     """
     data = json.loads(updates)
     result = _update_param_constraint(doc_id, data)
+    return json.dumps(result, ensure_ascii=False)
+
+
+@mcp.tool()
+def update_param_relation_objects(doc_id: int, updates: str) -> str:
+    """Batch update the relation_object field of param_relations.
+
+    Args:
+        doc_id: Primary key of document_versions table.
+        updates: JSON string — array of dicts with id, relation_object.
+
+    Returns:
+        JSON string with count of updated rows.
+    """
+    data = json.loads(updates)
+    result = _update_param_relation_objects(doc_id, data)
     return json.dumps(result, ensure_ascii=False)
 
 

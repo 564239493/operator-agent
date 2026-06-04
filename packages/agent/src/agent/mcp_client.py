@@ -189,6 +189,13 @@ class MCPClient:
             "updates": json.dumps(updates, ensure_ascii=False),
         })
 
+    async def update_param_relation_objects(self, doc_id: int, updates: list[dict]) -> dict:
+        """Batch update the relation_object field of param_relations."""
+        return await self._call_tool("update_param_relation_objects", {
+            "doc_id": doc_id,
+            "updates": json.dumps(updates, ensure_ascii=False),
+        })
+
     async def save_param_relations(self, doc_id: int, relations: list[dict]) -> dict:
         """Batch save parameter relations for a document version."""
         return await self._call_tool("save_relations", {
