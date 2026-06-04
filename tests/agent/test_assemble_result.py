@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from agent.nodes.assemble_result import (
     _build_function_explanation,
+    _build_inputs_outputs,
     _transform_return_codes,
 )
 
@@ -172,4 +173,107 @@ class TestTransformReturnCodes:
         assert result[1]["error_code"] == 161002
         assert result[0]["description"] == ["空指针"]
         assert result[1]["description"] == ["类型不支持"]
+
+
+class TestBuildInputsOutputs:
+    def test_only_workspace_size_function_included(self):
+        """Only params from WorkspaceSize-ending functions are included."""
+        params = [
+            {
+                "function_name": "aclnnFooGetWorkspaceSize",
+                "param_name": "x",
+                "direction": "input",
+                "param_constraint": '{"Atlas A2": {"type": {"value": "aclTensor"}}}',
+            },
+            {
+                "function_name": "aclnnFoo",
+                "param_name": "y",
+                "direction": "input",
+                "param_constraint": '{"Atlas A2": {"type": {"value": "aclTensor"}}}',
+            },
+        ]
+        inputs, outputs = _build_inputs_outputs(params)
+        assert "x" in inputs
+        assert "y" not in inputs
+
+    def test_workspace_size_and_executor_excluded(self):
+        """workspaceSize and executor params are excluded."""
+        params = [
+            {
+                "function_name": "aclnnFooGetWorkspaceSize",
+                "param_name": "workspaceSize",
+                "direction": "output",
+                "param_constraint": "{}",
+            },
+            {
+                "function_name": "aclnnFooGetWorkspaceSize",
+                "param_name": "executor",
+                "direction": "input",
+                "param_constraint": "{}",
+            },
+            {
+                "function_name": "aclnnFooGetWorkspaceSize",
+                "param_name": "x",
+                "direction": "input",
+                "param_constraint": '{"Atlas A2": {"type": {"value": "aclTensor"}}}',
+            },
+        ]
+        inputs, outputs = _build_inputs_outputs(params)
+        assert "workspaceSize" not in outputs
+        assert "executor" not in inputs
+        assert "x" in inputs
+
+    def test_input_output_split(self):
+        """Params are split correctly by direction."""
+        params = [
+            {
+                "function_name": "aclnnFooGetWorkspaceSize",
+                "param_name": "x",
+                "direction": "input",
+                "param_constraint": '{"Atlas A2": {"type": {"value": "aclTensor"}}}',
+            },
+            {
+                "function_name": "aclnnFooGetWorkspaceSize",
+                "param_name": "y",
+                "direction": "output",
+                "param_constraint": '{"Atlas A2": {"type": {"value": "aclTensor"}}}',
+            },
+        ]
+        inputs, outputs = _build_inputs_outputs(params)
+        assert "x" in inputs
+        assert "y" in outputs
+        assert "x" not in outputs
+        assert "y" not in inputs
+
+    def test_empty_params(self):
+        """Empty params returns empty dicts."""
+        inputs, outputs = _build_inputs_outputs([])
+        assert inputs == {}
+        assert outputs == {}
+
+    def test_constraint_parsed_from_json_string(self):
+        """param_constraint is parsed from JSON string."""
+        params = [
+            {
+                "function_name": "aclnnFooGetWorkspaceSize",
+                "param_name": "x",
+                "direction": "input",
+                "param_constraint": '{"Atlas A2": {"type": {"value": "aclTensor"}}}',
+            },
+        ]
+        inputs, _ = _build_inputs_outputs(params)
+        assert inputs["x"] == {"Atlas A2": {"type": {"value": "aclTensor"}}}
+
+    def test_constraint_handles_invalid_json(self):
+        """Invalid JSON in param_constraint falls back to empty dict."""
+        params = [
+            {
+                "function_name": "aclnnFooGetWorkspaceSize",
+                "param_name": "x",
+                "direction": "input",
+                "param_constraint": "not-valid-json",
+            },
+        ]
+        inputs, _ = _build_inputs_outputs(params)
+        assert inputs["x"] == {}
 

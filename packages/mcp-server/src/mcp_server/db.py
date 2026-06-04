@@ -330,6 +330,51 @@ class Database:
             )
         except sqlite3.OperationalError:
             pass
+        # 迁移：v29 — platform_support.deterministic_computing value 从中文改为 true/false
+        try:
+            self._conn.execute(
+                "UPDATE platform_support "
+                "SET deterministic_computing = json_set(deterministic_computing, '$.value', 'true') "
+                "WHERE json_extract(deterministic_computing, '$.value') = '确定性'"
+            )
+            self._conn.execute(
+                "UPDATE platform_support "
+                "SET deterministic_computing = json_set(deterministic_computing, '$.value', 'false') "
+                "WHERE json_extract(deterministic_computing, '$.value') = '非确定性'"
+            )
+        except sqlite3.OperationalError:
+            pass
+        # 迁移：v29b — constraints_result.deterministic_computing 同步转换
+        try:
+            # constraints_result.deterministic_computing is a JSON object keyed by platform_name
+            # e.g. {"Atlas A2": {"value": "确定性", "src_text": "..."}}
+            # Use json_patch-style update: iterate keys is hard in SQL, so do it in Python
+            rows = self._conn.execute(
+                "SELECT id, deterministic_computing FROM constraints_result "
+                "WHERE deterministic_computing != '{}'"
+            ).fetchall()
+            for row_id, dc_raw in rows:
+                try:
+                    dc = json.loads(dc_raw)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+                changed = False
+                for plat, det in dc.items():
+                    if isinstance(det, dict):
+                        v = det.get("value", "")
+                        if v == "确定性":
+                            det["value"] = "true"
+                            changed = True
+                        elif v == "非确定性":
+                            det["value"] = "false"
+                            changed = True
+                if changed:
+                    self._conn.execute(
+                        "UPDATE constraints_result SET deterministic_computing = ? WHERE id = ?",
+                        (json.dumps(dc, ensure_ascii=False), row_id),
+                    )
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
 
     @property

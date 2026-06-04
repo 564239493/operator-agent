@@ -1066,7 +1066,7 @@ def save_determinism(doc_id: int, determinism_records: list[dict]) -> dict:
     conn = db.conn
     for record in determinism_records:
         product = record.get("product", "")
-        value_str = "确定性" if record.get("value") else "非确定性"
+        value_str = "true" if record.get("value") else "false"
         src_text = record.get("src_text", "")
         det_json = json.dumps(
             {"value": value_str, "src_text": src_text},
@@ -1124,12 +1124,15 @@ def query_determinism_by_operator(operator_name: str | None = None) -> list[dict
     result = []
     for r in rows:
         det = json.loads(r[4])
+        raw_val = det.get("value", "")
+        # Support both new ("true"/"false") and legacy ("确定性"/"非确定性") formats
+        is_det = raw_val == "true" or raw_val == "确定性"
         result.append({
             "id": r[0],
             "operator_name": r[1],
             "version": r[2],
             "product": r[3],
-            "value": det.get("value") == "确定性",
+            "value": is_det,
             "src_text": det.get("src_text", ""),
         })
     return result

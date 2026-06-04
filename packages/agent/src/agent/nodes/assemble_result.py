@@ -211,11 +211,22 @@ def _build_deterministic_computing(platforms: list[dict]) -> dict[str, Any]:
 def _build_inputs_outputs(
     params: list[dict],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Build inputs/outputs: {param_name: param_constraint} split by direction."""
+    """Build inputs/outputs: {param_name: param_constraint} split by direction.
+
+    Only includes parameters that meet ALL of:
+    1. function_name ends with "WorkspaceSize"
+    2. param_name is not "workspaceSize" or "executor"
+    """
+    _EXCLUDED_PARAMS = {"workspaceSize", "executor"}
     inputs: dict[str, Any] = {}
     outputs: dict[str, Any] = {}
     for p in params:
+        fn = p.get("function_name", "")
+        if not fn.endswith("WorkspaceSize"):
+            continue
         name = p.get("param_name", "")
+        if name in _EXCLUDED_PARAMS:
+            continue
         constraint_raw = p.get("param_constraint", "{}") or "{}"
         try:
             constraint = json.loads(constraint_raw) if isinstance(constraint_raw, str) else constraint_raw
