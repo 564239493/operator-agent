@@ -326,6 +326,7 @@ class MCPClient:
         platform_support: str,
         function_explanation: str,
         function_signature: str = "",
+        return_codes: str = "[]",
     ) -> dict:
         """Save assembled constraints result for a document version."""
         return await self._call_tool("save_constraints_result", {
@@ -335,6 +336,7 @@ class MCPClient:
             "platform_support": platform_support,
             "function_explanation": function_explanation,
             "function_signature": function_signature,
+            "return_codes": return_codes,
         })
 
     async def query_constraints_result(self, operator_name: str | None = None) -> list[dict]:

@@ -1303,6 +1303,7 @@ def save_constraints_result(
     platform_support: str,
     function_explanation: str,
     function_signature: str = "",
+    return_codes: str = "[]",
 ) -> dict:
     """Save assembled constraints result for a document version.
 
@@ -1315,6 +1316,7 @@ def save_constraints_result(
         platform_support: JSON string of supported platform name list.
         function_explanation: JSON string of function-grouped constraint data.
         function_signature: full_signature of the GetWorkspaceSize function.
+        return_codes: JSON string of transformed return codes array.
 
     Returns:
         dict with saved flag.
@@ -1324,10 +1326,10 @@ def save_constraints_result(
     conn.execute(
         "INSERT OR REPLACE INTO constraints_result "
         "(doc_id, operator_name, product_support, platform_support, "
-        "function_explanation, function_signature) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
+        "function_explanation, function_signature, return_codes) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
         (doc_id, operator_name, product_support, platform_support,
-         function_explanation, function_signature),
+         function_explanation, function_signature, return_codes),
     )
     conn.commit()
     return {"saved": True}
@@ -1342,7 +1344,7 @@ def query_constraints_result(operator_name: str | None = None) -> list[dict]:
         rows = conn.execute(
             "SELECT cr.id, cr.doc_id, cr.operator_name, dv.version, "
             "cr.product_support, cr.platform_support, cr.function_explanation, "
-            "cr.function_signature "
+            "cr.function_signature, cr.return_codes "
             "FROM constraints_result cr "
             "JOIN document_versions dv ON cr.doc_id = dv.id "
             "WHERE cr.operator_name = ? ORDER BY dv.version DESC",
@@ -1352,7 +1354,7 @@ def query_constraints_result(operator_name: str | None = None) -> list[dict]:
         rows = conn.execute(
             "SELECT cr.id, cr.doc_id, cr.operator_name, dv.version, "
             "cr.product_support, cr.platform_support, cr.function_explanation, "
-            "cr.function_signature "
+            "cr.function_signature, cr.return_codes "
             "FROM constraints_result cr "
             "JOIN document_versions dv ON cr.doc_id = dv.id "
             "ORDER BY cr.operator_name, dv.version DESC",
@@ -1368,6 +1370,7 @@ def query_constraints_result(operator_name: str | None = None) -> list[dict]:
             "platform_support": json.loads(r[5]) if r[5] else [],
             "function_explanation": json.loads(r[6]) if r[6] else {},
             "function_signature": r[7] or "",
+            "return_codes": json.loads(r[8]) if r[8] else [],
         }
         for r in rows
     ]

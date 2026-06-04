@@ -77,6 +77,10 @@ async def assemble_result_node(state: PipelineState) -> dict[str, Any]:
                 workspace_sig = sig.get("full_signature", "")
                 break
 
+        # Step 2d: Transform return_codes (deduplicate by (return_value, error_code))
+        transformed_rc = _transform_return_codes(return_codes)
+        return_codes_raw = json.dumps(transformed_rc, ensure_ascii=False)
+
         # Step 4: Save to constraints_result table
         await _mcp_client.save_constraints_result(
             doc_id=doc_id,
@@ -85,6 +89,7 @@ async def assemble_result_node(state: PipelineState) -> dict[str, Any]:
             platform_support=platform_support_raw,
             function_explanation=function_explanation_raw,
             function_signature=workspace_sig,
+            return_codes=return_codes_raw,
         )
 
         fn_count = len(function_explanation)
@@ -142,4 +147,27 @@ def _build_function_explanation(
         }
 
     return result
+
+
+def _transform_return_codes(raw_codes: list[dict]) -> list[dict]:
+    """Deduplicate return codes by (return_value, error_code) and merge descriptions.
+
+    Pure in-memory operation — no DB queries, no LLM calls.
+    """
+    merged: dict[tuple[str, int], list[str]] = {}
+    for rc in raw_codes:
+        key = (rc.get("return_value", ""), rc.get("error_code", 0))
+        descs = rc.get("descriptions", [])
+        if key not in merged:
+            merged[key] = list(descs)
+        else:
+            merged[key].extend(descs)
+    return [
+        {
+            "return_value": rv,
+            "error_code": ec,
+            "description": descs,
+        }
+        for (rv, ec), descs in merged.items()
+    ]
 

@@ -145,6 +145,7 @@ class ConstraintsResultItem(BaseModel):
     product_support: list = []
     platform_support: list[str] = []
     function_explanation: dict = {}
+    return_codes: list = []
 
 
 class ConstraintsResultResponse(BaseModel):

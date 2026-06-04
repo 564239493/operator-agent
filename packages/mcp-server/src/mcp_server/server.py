@@ -761,6 +761,7 @@ def save_constraints_result(
     platform_support: str,
     function_explanation: str,
     function_signature: str = "",
+    return_codes: str = "[]",
 ) -> str:
     """Save assembled constraints result for a document version.
 
@@ -771,13 +772,14 @@ def save_constraints_result(
         platform_support: JSON string of supported platform name list.
         function_explanation: JSON string of function-grouped constraint data.
         function_signature: full_signature of the GetWorkspaceSize function.
+        return_codes: JSON string of transformed return codes array.
 
     Returns:
         JSON string with saved flag.
     """
     result = _save_constraints_result(
         doc_id, operator_name, product_support, platform_support,
-        function_explanation, function_signature,
+        function_explanation, function_signature, return_codes,
     )
     return json.dumps(result, ensure_ascii=False)
 
