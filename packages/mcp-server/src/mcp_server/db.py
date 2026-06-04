@@ -267,6 +267,14 @@ class Database:
             )
         except sqlite3.OperationalError:
             pass
+        # 迁移：v21 — constraints_result 新增 return_codes 列
+        try:
+            self._conn.execute(
+                "ALTER TABLE constraints_result ADD COLUMN return_codes "
+                "TEXT NOT NULL DEFAULT '[]'"
+            )
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
 
     @property
