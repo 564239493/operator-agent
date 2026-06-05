@@ -54,7 +54,7 @@ async def array_length_extract_node(state: PipelineState) -> dict[str, Any]:
             logger.info("ArrayLengthExtract: no parameters in state for doc_id=%s, skipping", doc_id)
             return {"error": None}
 
-        described = [p for p in params if p.get("description")]
+        described = [p for p in params if p.get("llm_description")]
         if not described:
             logger.info("ArrayLengthExtract: no parameters with descriptions for doc_id=%s, skipping", doc_id)
             return {"error": None}
@@ -118,7 +118,7 @@ async def _extract_array_length(llm: ChatOpenAI, param: dict) -> dict | None:
     """Call LLM to extract array length for a single parameter."""
     param_name = param.get("param_name", "")
     function_name = param.get("function_name", "")
-    description = param.get("description", "")
+    description = param.get("llm_description", "")
 
     prompt = ARRAY_LENGTH_EXTRACT_PROMPT.format(
         params_text=description,

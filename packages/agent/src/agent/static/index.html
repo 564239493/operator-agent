@@ -165,6 +165,58 @@
   .json-tree li:not(.collapsed) > .jc::before { content: '\25BC'; }
   .json-tree .jb-open, .json-tree .jb-close { color: #6b7280; }
   .json-tree .jcount { color: #6b7280; font-size: .75rem; margin-left: 6px; font-style: italic; }
+
+  /* Task panel */
+  .task-sub-view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .task-sub-view.active { display: flex; }
+  .task-doc-list { flex: 1; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; }
+  .task-doc-row { display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f3f4f6; font-size: .85rem; gap: 10px; }
+  .task-doc-row:hover { background: #f9fafb; }
+  .task-doc-row:last-child { border-bottom: none; }
+  .task-doc-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: #4f46e5; }
+  .task-doc-name { flex: 1; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-doc-path { color: #9ca3af; font-size: .8rem; flex-shrink: 0; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-doc-size { color: #9ca3af; font-size: .8rem; flex-shrink: 0; width: 60px; text-align: right; }
+  .task-doc-cat { font-size: .75rem; padding: 1px 8px; border-radius: 10px; background: #e0e7ff; color: #3730a3; font-weight: 600; flex-shrink: 0; }
+  .task-pager { display: flex; gap: 4px; justify-content: center; align-items: center; padding: 10px 0; font-size: .85rem; }
+  .task-pager button { padding: 4px 10px; font-size: .8rem; border-radius: 4px; min-width: auto; }
+  .task-pager .pg-active { background: #4f46e5; color: #fff; }
+
+  .task-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: .15s; }
+  .task-list-item:hover { background: #f9fafb; border-color: #4f46e5; }
+  .task-list-name { font-weight: 600; font-size: .95rem; }
+  .task-list-meta { font-size: .8rem; color: #888; margin-top: 2px; }
+  .task-list-status { display: flex; align-items: center; gap: 8px; }
+
+  .task-progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin: 12px 0; }
+  .task-progress-fill { height: 100%; background: #4f46e5; border-radius: 4px; transition: width .3s; }
+  .task-progress-fill.has-errors { background: #f59e0b; }
+
+  .task-items-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  .task-items-table th { background: #f3f4f6; padding: 8px 10px; text-align: left; border: 1px solid #e5e7eb; font-weight: 600; color: #374151; }
+  .task-items-table td { padding: 6px 10px; border: 1px solid #e5e7eb; }
+  .task-items-table tr:hover td { background: #f9fafb; }
+  .ti-pending { background: #f3f4f6; color: #6b7280; padding: 2px 10px; border-radius: 10px; font-size: .8rem; font-weight: 600; }
+  .ti-running { background: #dbeafe; color: #1d4ed8; padding: 2px 10px; border-radius: 10px; font-size: .8rem; font-weight: 600; }
+  .ti-completed { background: #dcfce7; color: #166534; padding: 2px 10px; border-radius: 10px; font-size: .8rem; font-weight: 600; }
+  .ti-failed { background: #fee2e2; color: #991b1b; padding: 2px 10px; border-radius: 10px; font-size: .8rem; font-weight: 600; }
+  .badge-running { background: #dbeafe; color: #1d4ed8; }
+  .badge-completed { background: #dcfce7; color: #166534; }
+  .badge-failed { background: #fee2e2; color: #991b1b; }
+  .badge-pending { background: #f3f4f6; color: #6b7280; }
+
+  /* Category tabs */
+  .task-cat-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb; }
+  .task-cat-tab { padding: 5px 14px; border-radius: 16px; font-size: .82rem; cursor: pointer; background: #f3f4f6; border: 1px solid #e5e7eb; color: #555; transition: .15s; white-space: nowrap; }
+  .task-cat-tab:hover { background: #e0e7ff; border-color: #c7d2fe; }
+  .task-cat-tab.active { background: #4f46e5; color: #fff; border-color: #4f46e5; font-weight: 600; }
+  .task-cat-tab .cat-count { display: inline-block; min-width: 18px; text-align: center; padding: 0 5px; border-radius: 10px; font-size: .7rem; font-weight: 600; margin-left: 4px; background: rgba(0,0,0,.08); }
+  .task-cat-tab.active .cat-count { background: rgba(255,255,255,.25); }
+  .task-cat-action-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 6px 0; }
+  .task-cat-select-all { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: #4f46e5; cursor: pointer; user-select: none; }
+  .task-cat-select-all input[type="checkbox"] { accent-color: #4f46e5; width: 15px; height: 15px; cursor: pointer; }
+  .task-cat-select-all:hover { color: #4338ca; }
+  .task-cat-name { font-weight: 600; font-size: .9rem; color: #374151; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -212,6 +264,10 @@
       <button class="nav-item" onclick="switchTab('result', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         约束结果
+      </button>
+      <button class="nav-item" onclick="switchTab('tasks', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        任务
       </button>
     </nav>
   </aside>
@@ -442,6 +498,65 @@
     </div>
   </div>
 
+  <!-- Tasks Panel -->
+  <div class="panel" id="panelTasks">
+    <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+
+      <!-- Sub-view: Task List -->
+      <div class="task-sub-view active" id="taskListView">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h2 style="margin:0">任务列表</h2>
+          <div style="display:flex;gap:8px">
+            <button onclick="showTaskCreate()">新建任务</button>
+            <button class="secondary" onclick="loadTaskList()">刷新</button>
+          </div>
+        </div>
+        <div id="taskListContent" style="flex:1;min-height:0;overflow-y:auto"></div>
+        <div class="status" id="taskListStatus"></div>
+      </div>
+
+      <!-- Sub-view: Create Task -->
+      <div class="task-sub-view" id="taskCreateView">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span class="back-link" onclick="showTaskList()">&larr; 返回列表</span>
+          <h2 style="margin:0">新建任务</h2>
+        </div>
+        <div id="taskCatTabs" class="task-cat-tabs"></div>
+        <div class="task-cat-action-bar">
+          <label class="task-cat-select-all" onclick="toggleCategoryAll()">
+            <input type="checkbox" id="taskCatSelectAllCb">
+            <span>全选「<span id="taskCatSelectAllName">全部</span>」</span>
+          </label>
+          <span id="taskCatInfo" style="font-size:.8rem;color:#9ca3af"></span>
+          <span style="flex:1"></span>
+          <span id="taskSelectedCount" style="font-size:.85rem;color:#6b7280;white-space:nowrap">已选: 0</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+          <input type="text" id="taskDocSearch" placeholder="搜索算子名..." style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:.85rem" oninput="filterTaskDocs()">
+        </div>
+        <div class="task-doc-list" id="taskDocList"></div>
+        <div class="task-pager" id="taskDocPager"></div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+          <button class="secondary" onclick="taskDocSelectAll()">全选当前页</button>
+          <button class="secondary" onclick="taskDocClearAll()">清空选择</button>
+          <div style="flex:1"></div>
+          <input type="text" id="taskNameInput" placeholder="任务名称（可选）" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:.85rem;width:200px">
+          <button id="createTaskBtn" onclick="submitCreateTask()" disabled>创建任务 (0)</button>
+        </div>
+        <div class="status" id="taskCreateStatus"></div>
+      </div>
+
+      <!-- Sub-view: Task Detail -->
+      <div class="task-sub-view" id="taskDetailView">
+        <span class="back-link" onclick="showTaskList()">&larr; 返回列表</span>
+        <div id="taskDetailHeader" style="margin-bottom:12px"></div>
+        <div class="task-progress-bar"><div class="task-progress-fill" id="taskProgressFill"></div></div>
+        <div id="taskDetailContent" style="flex:1;min-height:0;overflow-y:auto"></div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Description Modal -->
   <div id="descModalOverlay" class="modal-overlay" onclick="closeDescModalOutside(event)">
     <div class="modal-box">
@@ -471,6 +586,7 @@ function switchTab(name, el) {
   if (name === 'signatures') { loadSigOperators(); loadSignatures(); }
   if (name === 'dtypes') { loadDtypeOperators(); loadDtypeCombos(); }
   if (name === 'result') { loadResultOperators(); loadConstraintsResult(); }
+  if (name === 'tasks') { showTaskList(); loadTaskList(); }
 }
 
 /* ---------- Parse step helpers ---------- */
@@ -962,7 +1078,7 @@ async function loadParams() {
         '<td class="td-src">' + (p.src_content
           ? '<textarea readonly rows="2" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:4px;font-family:monospace;font-size:.75rem;background:#fffbeb;resize:vertical">' + escapeHtml(stripMarkup(p.src_content)) + '</textarea>'
           : '-') + '</td>' +
-        '<td>' + (p.description
+        '<td>' + (p.llm_description
           ? '<a class="desc-link" data-idx="' + idx + '" onclick="openDescModalByIdx(this)">查看描述</a>'
           : '-') + '</td>' +
         '<td>' + escapeHtml(p.data_type || '-') + '</td>' +
@@ -1002,7 +1118,7 @@ function openDescModalByIdx(el) {
   const title = document.getElementById('descModalTitle');
   const body = document.getElementById('descModalBody');
   title.textContent = param.param_name + ' (' + param.function_name + ')';
-  body.innerHTML = param.description ? marked.parse(param.description) : '（无描述）';
+  body.innerHTML = param.llm_description ? marked.parse(param.llm_description) : '（无描述）';
   overlay.style.display = 'flex';
 }
 
@@ -1586,6 +1702,388 @@ async function loadConstraintsResult() {
   } catch (err) {
     statusEl.textContent = '加载失败: ' + err.message;
   }
+}
+
+/* ---------- Tasks ---------- */
+let _taskDocs = [];
+let _taskDocPage = 1;
+const _taskDocPageSize = 50;
+let _taskDocSelected = new Set();
+let _taskDocActiveCat = '全部';
+let _taskListPollTimer = null;
+let _taskDetailPollTimer = null;
+let _taskDetailId = null;
+
+function showTaskSubView(viewId) {
+  document.querySelectorAll('#panelTasks .task-sub-view').forEach(v => v.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+}
+
+function showTaskList() {
+  showTaskSubView('taskListView');
+  _stopTaskDetailPoll();
+}
+
+function showTaskCreate() {
+  showTaskSubView('taskCreateView');
+  loadTaskDocs();
+}
+
+function showTaskDetail(taskId) {
+  showTaskSubView('taskDetailView');
+  _taskDetailId = taskId;
+  loadTaskDetail(taskId);
+  _startTaskDetailPoll(taskId);
+}
+
+/* -- Load task docs for create view -- */
+async function loadTaskDocs() {
+  const listEl = document.getElementById('taskDocList');
+  listEl.innerHTML = '<div style="padding:20px;text-align:center;color:#888"><span class="spinner"></span>加载中...</div>';
+  try {
+    const res = await fetch('/api/v1/task-docs');
+    const data = await res.json();
+    _taskDocs = data.documents || [];
+    _taskDocPage = 1;
+    _taskDocActiveCat = '全部';
+    renderTaskDocs();
+  } catch (err) {
+    listEl.innerHTML = '<div style="padding:20px;text-align:center;color:#991b1b">加载失败: ' + err.message + '</div>';
+  }
+}
+
+function filterTaskDocs() {
+  _taskDocPage = 1;
+  renderTaskDocs();
+}
+
+function renderTaskDocs() {
+  const searchEl = document.getElementById('taskDocSearch');
+  const search = (searchEl ? searchEl.value : '').toLowerCase();
+
+  // Build category list
+  const categories = ['全部'];
+  const catSet = new Set();
+  _taskDocs.forEach(d => { if (d.category && !catSet.has(d.category)) { catSet.add(d.category); categories.push(d.category); } });
+
+  // Render category tabs
+  const tabsEl = document.getElementById('taskCatTabs');
+  if (tabsEl) {
+    tabsEl.innerHTML = categories.map(cat => {
+      const count = cat === '全部' ? _taskDocs.length : _taskDocs.filter(d => d.category === cat).length;
+      const active = cat === _taskDocActiveCat ? ' active' : '';
+      return '<span class="task-cat-tab' + active + '" onclick="switchTaskCat(\'' + escapeHtml(cat) + '\')">'
+        + escapeHtml(cat) + '<span class="cat-count">' + count + '</span></span>';
+    }).join('');
+  }
+
+  // Filter by category and search
+  let filtered = _taskDocs;
+  if (_taskDocActiveCat !== '全部') filtered = filtered.filter(d => d.category === _taskDocActiveCat);
+  if (search) filtered = filtered.filter(d => d.name.toLowerCase().includes(search));
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / _taskDocPageSize));
+  if (_taskDocPage > totalPages) _taskDocPage = totalPages;
+  const start = (_taskDocPage - 1) * _taskDocPageSize;
+  const pageItems = filtered.slice(start, start + _taskDocPageSize);
+
+  // Update category select-all checkbox
+  const catCb = document.getElementById('taskCatSelectAllCb');
+  const catName = document.getElementById('taskCatSelectAllName');
+  if (catCb && pageItems.length > 0) {
+    catCb.checked = pageItems.every(d => _taskDocSelected.has(d.path));
+  } else if (catCb) {
+    catCb.checked = false;
+  }
+  if (catName) catName.textContent = _taskDocActiveCat;
+
+  // Update category info
+  const catInfoEl = document.getElementById('taskCatInfo');
+  if (catInfoEl) {
+    const selInCat = pageItems.filter(d => _taskDocSelected.has(d.path)).length;
+    catInfoEl.textContent = pageItems.length > 0 ? (pageItems.length + ' 个文档，已选 ' + selInCat) : '';
+  }
+
+  // Render document list
+  const listEl = document.getElementById('taskDocList');
+  if (pageItems.length === 0) {
+    listEl.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa">无匹配的文档</div>';
+  } else {
+    listEl.innerHTML = pageItems.map(d => {
+      const checked = _taskDocSelected.has(d.path) ? 'checked' : '';
+      const sizeKB = (d.size / 1024).toFixed(1) + 'KB';
+      const cat = (_taskDocActiveCat === '全部' && d.category) ? '<span class="task-doc-cat">' + escapeHtml(d.category) + '</span>' : '';
+      return '<div class="task-doc-row">'
+        + '<input type="checkbox" ' + checked + ' onchange="toggleTaskDoc(\'' + escapeHtml(d.path) + '\', this.checked)">'
+        + '<span class="task-doc-name">' + escapeHtml(d.name) + '</span>'
+        + ' ' + cat
+        + '<span class="task-doc-path" title="' + escapeHtml(d.path) + '">' + escapeHtml(d.path) + '</span>'
+        + '<span class="task-doc-size">' + sizeKB + '</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  // Pager
+  const pagerEl = document.getElementById('taskDocPager');
+  if (totalPages <= 1) {
+    pagerEl.innerHTML = '<span style="color:#9ca3af">共 ' + filtered.length + ' 个文档</span>';
+    return;
+  }
+  let pg = '';
+  if (_taskDocPage > 1) pg += '<button class="secondary" onclick="_taskDocPage=1;renderTaskDocs()">首页</button><button class="secondary" onclick="_taskDocPage--;renderTaskDocs()">&lt;</button>';
+  const rangeStart = Math.max(1, _taskDocPage - 2);
+  const rangeEnd = Math.min(totalPages, _taskDocPage + 2);
+  for (let i = rangeStart; i <= rangeEnd; i++) {
+    pg += '<button class="' + (i === _taskDocPage ? 'pg_active' : 'secondary') + '" onclick="_taskDocPage=' + i + ';renderTaskDocs()">' + i + '</button>';
+  }
+  if (_taskDocPage < totalPages) pg += '<button class="secondary" onclick="_taskDocPage++;renderTaskDocs()">&gt;</button><button class="secondary" onclick="_taskDocPage=' + totalPages + ';renderTaskDocs()">末页</button>';
+  pg += '<span style="color:#9ca3af;margin-left:8px">共 ' + filtered.length + ' 个文档</span>';
+  pagerEl.innerHTML = pg;
+}
+
+function toggleTaskDoc(path, checked) {
+  if (checked) _taskDocSelected.add(path);
+  else _taskDocSelected.delete(path);
+  updateTaskSelectedCount();
+}
+
+function switchTaskCat(cat) {
+  _taskDocActiveCat = cat;
+  _taskDocPage = 1;
+  renderTaskDocs();
+}
+
+function getCategoryFilteredPaths() {
+  const searchEl = document.getElementById('taskDocSearch');
+  const search = (searchEl ? searchEl.value : '').toLowerCase();
+  return _taskDocs
+    .filter(d => _taskDocActiveCat === '全部' || d.category === _taskDocActiveCat)
+    .filter(d => !search || d.name.toLowerCase().includes(search))
+    .map(d => d.path);
+}
+
+function toggleCategoryAll() {
+  const paths = getCategoryFilteredPaths();
+  const allSelected = paths.length > 0 && paths.every(p => _taskDocSelected.has(p));
+  if (allSelected) {
+    paths.forEach(p => _taskDocSelected.delete(p));
+  } else {
+    paths.forEach(p => _taskDocSelected.add(p));
+  }
+  updateTaskSelectedCount();
+}
+
+function taskDocSelectAll() {
+  const paths = getCategoryFilteredPaths();
+  const start = (_taskDocPage - 1) * _taskDocPageSize;
+  const pageItems = paths.slice(start, start + _taskDocPageSize);
+  pageItems.forEach(p => _taskDocSelected.add(p));
+  renderTaskDocs();
+  updateTaskSelectedCount();
+}
+
+function taskDocClearAll() {
+  _taskDocSelected.clear();
+  renderTaskDocs();
+  updateTaskSelectedCount();
+}
+
+function updateTaskSelectedCount() {
+  const count = _taskDocSelected.size;
+  document.getElementById('taskSelectedCount').textContent = '已选: ' + count;
+  const btn = document.getElementById('createTaskBtn');
+  btn.disabled = count === 0;
+  btn.textContent = '创建任务 (' + count + ')';
+}
+
+/* -- Create task -- */
+async function submitCreateTask() {
+  if (_taskDocSelected.size === 0) return;
+  const btn = document.getElementById('createTaskBtn');
+  const statusEl = document.getElementById('taskCreateStatus');
+  btn.disabled = true;
+  statusEl.innerHTML = '<span class="spinner"></span>创建中...';
+
+  const name = document.getElementById('taskNameInput').value.trim() || null;
+  const file_paths = Array.from(_taskDocSelected);
+
+  try {
+    const res = await fetch('/api/v1/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, file_paths }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      statusEl.innerHTML = '<span class="badge badge-ok">创建成功</span>';
+      _taskDocSelected.clear();
+      updateTaskSelectedCount();
+      setTimeout(() => showTaskDetail(data.task_id), 500);
+    } else {
+      statusEl.innerHTML = '<span class="badge badge-err">创建失败: ' + escapeHtml(data.error || '未知错误') + '</span>';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    statusEl.innerHTML = '<span class="badge badge-err">请求失败: ' + err.message + '</span>';
+    btn.disabled = false;
+  }
+}
+
+/* -- Task list -- */
+async function loadTaskList() {
+  const contentEl = document.getElementById('taskListContent');
+  const statusEl = document.getElementById('taskListStatus');
+  _stopTaskListPoll();
+
+  try {
+    const res = await fetch('/api/v1/tasks');
+    const data = await res.json();
+    const tasks = data.tasks || [];
+    if (tasks.length === 0) {
+      contentEl.innerHTML = '<div class="empty-state">暂无任务，点击"新建任务"创建</div>';
+      statusEl.textContent = '';
+      return;
+    }
+    contentEl.innerHTML = tasks.map(t => {
+      const badgeCls = 'badge-' + t.status;
+      const progress = t.total_count > 0 ? `${t.completed_count}/${t.total_count}` : '-';
+      return `<div class="task-list-item" onclick="showTaskDetail(${t.id})">
+        <div>
+          <div class="task-list-name">${escapeHtml(t.name)}</div>
+          <div class="task-list-meta">${escapeHtml(t.created_at || '')} | ${progress} 完成</div>
+        </div>
+        <div class="task-list-status">
+          <span class="badge ${badgeCls}">${t.status}</span>
+          <span style="color:#888;font-size:.8rem">&gt;</span>
+        </div>
+      </div>`;
+    }).join('');
+    statusEl.textContent = '共 ' + tasks.length + ' 个任务';
+
+    // Auto-poll if any running
+    if (tasks.some(t => t.status === 'running' || t.status === 'pending')) {
+      _startTaskListPoll();
+    }
+  } catch (err) {
+    contentEl.innerHTML = '<div class="empty-state">加载失败: ' + err.message + '</div>';
+  }
+}
+
+function _startTaskListPoll() {
+  _stopTaskListPoll();
+  _taskListPollTimer = setInterval(async () => {
+    // Only poll if the task list view is active
+    if (!document.getElementById('taskListView').classList.contains('active')) return;
+    try {
+      const res = await fetch('/api/v1/tasks');
+      const data = await res.json();
+      const tasks = data.tasks || [];
+      const hasActive = tasks.some(t => t.status === 'running' || t.status === 'pending');
+      // Re-render the list
+      const contentEl = document.getElementById('taskListContent');
+      contentEl.innerHTML = tasks.map(t => {
+        const badgeCls = 'badge-' + t.status;
+        const progress = t.total_count > 0 ? `${t.completed_count}/${t.total_count}` : '-';
+        return `<div class="task-list-item" onclick="showTaskDetail(${t.id})">
+          <div>
+            <div class="task-list-name">${escapeHtml(t.name)}</div>
+            <div class="task-list-meta">${escapeHtml(t.created_at || '')} | ${progress} 完成</div>
+          </div>
+          <div class="task-list-status">
+            <span class="badge ${badgeCls}">${t.status}</span>
+            <span style="color:#888;font-size:.8rem">&gt;</span>
+          </div>
+        </div>`;
+      }).join('');
+      if (!hasActive) _stopTaskListPoll();
+    } catch (_) {}
+  }, 3000);
+}
+
+function _stopTaskListPoll() {
+  if (_taskListPollTimer) { clearInterval(_taskListPollTimer); _taskListPollTimer = null; }
+}
+
+/* -- Task detail -- */
+async function loadTaskDetail(taskId) {
+  const headerEl = document.getElementById('taskDetailHeader');
+  const contentEl = document.getElementById('taskDetailContent');
+  const progressFill = document.getElementById('taskProgressFill');
+
+  try {
+    const res = await fetch('/api/v1/tasks/' + taskId);
+    const t = await res.json();
+
+    const badgeCls = 'badge-' + t.status;
+    const progress = t.total_count > 0 ? `${t.completed_count}/${t.total_count}` : '-';
+    headerEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px">
+        <h2 style="margin:0">${escapeHtml(t.name)}</h2>
+        <span class="badge ${badgeCls}">${t.status}</span>
+        <span style="font-size:.85rem;color:#6b7280">${progress}</span>
+      </div>`;
+
+    const pct = t.total_count > 0 ? Math.round((t.completed_count + t.failed_count) / t.total_count * 100) : 0;
+    progressFill.style.width = pct + '%';
+    progressFill.className = 'task-progress-fill' + (t.failed_count > 0 ? ' has-errors' : '');
+
+    const items = t.items || [];
+    if (items.length === 0) {
+      contentEl.innerHTML = '<div class="empty-state">无任务条目</div>';
+      return;
+    }
+
+    let html = '<table class="task-items-table"><thead><tr><th>#</th><th>算子名</th><th>状态</th><th>开始时间</th><th>完成时间</th><th>错误</th></tr></thead><tbody>';
+    items.forEach(item => {
+      const statusCls = 'ti-' + item.status;
+      const time = item.started_at && item.finished_at ? _formatDuration(item.started_at, item.finished_at) : (item.status === 'running' ? '...' : '');
+      html += `<tr>
+        <td>${item.seq}</td>
+        <td>${escapeHtml(item.operator_name)}</td>
+        <td><span class="${statusCls}">${item.status}</span></td>
+        <td style="font-size:.8rem;color:#888">${escapeHtml(item.started_at || '')}</td>
+        <td style="font-size:.8rem;color:#888">${escapeHtml(time)}</td>
+        <td style="font-size:.8rem;color:#991b1b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(item.error || '')}">${escapeHtml(item.error || '')}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    contentEl.innerHTML = html;
+
+    // Stop polling if done
+    if (t.status === 'completed' || t.status === 'failed') {
+      _stopTaskDetailPoll();
+    }
+  } catch (err) {
+    headerEl.innerHTML = '<span class="badge badge-err">加载失败: ' + err.message + '</span>';
+  }
+}
+
+function _startTaskDetailPoll(taskId) {
+  _stopTaskDetailPoll();
+  _taskDetailPollTimer = setInterval(() => {
+    if (!document.getElementById('taskDetailView').classList.contains('active')) {
+      _stopTaskDetailPoll();
+      return;
+    }
+    loadTaskDetail(taskId);
+  }, 2000);
+}
+
+function _stopTaskDetailPoll() {
+  if (_taskDetailPollTimer) { clearInterval(_taskDetailPollTimer); _taskDetailPollTimer = null; }
+}
+
+function _formatDuration(startStr, endStr) {
+  try {
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    const sec = Math.round((end - start) / 1000);
+    if (sec < 60) return sec + 's';
+    const min = Math.floor(sec / 60);
+    const remSec = sec % 60;
+    return min + 'm ' + remSec + 's';
+  } catch (_) { return ''; }
 }
 
 </script>

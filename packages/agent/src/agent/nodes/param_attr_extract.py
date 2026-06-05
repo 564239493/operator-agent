@@ -54,9 +54,9 @@ async def param_attr_extract_node(state: PipelineState) -> dict[str, Any]:
             logger.info("ParamAttrExtract: no parameters in state for doc_id=%s, skipping", doc_id)
             return {"error": None}
 
-        described = [p for p in params if p.get("description")]
+        described = [p for p in params if p.get("llm_description")]
         if not described:
-            logger.info("ParamAttrExtract: no parameters with descriptions for doc_id=%s, skipping", doc_id)
+            logger.info("ParamAttrExtract: no parameters with llm_description for doc_id=%s, skipping", doc_id)
             return {"error": None}
 
         updates = [_extract_attrs(p) for p in described]
@@ -80,7 +80,7 @@ async def param_attr_extract_node(state: PipelineState) -> dict[str, Any]:
 def _extract_attrs(param: dict) -> dict | None:
     """Extract is_support_discontinuous and param_desc for a single parameter."""
     param_type = param.get("param_type", "")
-    description = param.get("description", "")
+    description = param.get("llm_description", "")
     function_name = param.get("function_name", "")
     param_name = param.get("param_name", "")
 

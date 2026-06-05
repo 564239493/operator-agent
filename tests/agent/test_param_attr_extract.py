@@ -11,7 +11,7 @@ class TestExtractDiscontinuous:
     def test_non_tensor_type_returns_na(self):
         param = {
             "param_type": "int64_t",
-            "description": "| 属性 | 值 |\n|------|-----|\n| 非连续Tensor | √ |",
+            "llm_description": "| 属性 | 值 |\n|------|-----|\n| 非连续Tensor | √ |",
             "function_name": "aclnnFoo",
             "param_name": "offset",
         }
@@ -24,7 +24,7 @@ class TestExtractDiscontinuous:
     def test_tensor_type_with_checkmark(self):
         param = {
             "param_type": "aclTensor *",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 参数名 | x |\n"
@@ -43,7 +43,7 @@ class TestExtractDiscontinuous:
     def test_tensor_type_with_checkmark(self):
         param = {
             "param_type": "aclTensor *",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 参数名 | x |\n"
@@ -62,7 +62,7 @@ class TestExtractDiscontinuous:
     def test_tensor_type_with_support_text(self):
         param = {
             "param_type": "aclTensor *",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 非连续Tensor | 支持 |\n"
@@ -78,7 +78,7 @@ class TestExtractDiscontinuous:
     def test_tensor_type_with_cross(self):
         param = {
             "param_type": "aclTensor *",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 非连续Tensor | × |\n"
@@ -95,7 +95,7 @@ class TestExtractDiscontinuous:
     def test_tensor_type_no_row(self):
         param = {
             "param_type": "aclTensor *",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 参数名 | x |\n"
@@ -113,7 +113,7 @@ class TestExtractDiscontinuous:
     def test_empty_description_returns_none(self):
         param = {
             "param_type": "aclTensor *",
-            "description": "",
+            "llm_description": "",
             "function_name": "aclnnFoo",
             "param_name": "x",
         }
@@ -123,7 +123,7 @@ class TestExtractDiscontinuous:
     def test_tensor_case_insensitive(self):
         param = {
             "param_type": "acltensor *",
-            "description": "| 属性 | 值 |\n|------|-----|\n| 非连续Tensor | √ |",
+            "llm_description": "| 属性 | 值 |\n|------|-----|\n| 非连续Tensor | √ |",
             "function_name": "aclnnFoo",
             "param_name": "x",
         }
@@ -135,7 +135,7 @@ class TestExtractDiscontinuous:
     def test_tensor_type_with_other_text(self):
         param = {
             "param_type": "aclTensor *",
-            "description": "| 属性 | 值 |\n|------|-----|\n| 非连续Tensor | 不支持 |",
+            "llm_description": "| 属性 | 值 |\n|------|-----|\n| 非连续Tensor | 不支持 |",
             "function_name": "aclnnFoo",
             "param_name": "x",
         }
@@ -148,7 +148,7 @@ class TestExtractDiscontinuous:
     def test_preserves_function_and_param_name(self):
         param = {
             "param_type": "int",
-            "description": "| 属性 | 值 |\n|------|-----|",
+            "llm_description": "| 属性 | 值 |\n|------|-----|",
             "function_name": "aclnnBar",
             "param_name": "scale",
         }
@@ -162,7 +162,7 @@ class TestExtractParamDesc:
     def test_extracts_description_row(self):
         param = {
             "param_type": "aclTensor *",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 参数名 | x |\n"
@@ -179,7 +179,7 @@ class TestExtractParamDesc:
     def test_empty_when_none_value(self):
         param = {
             "param_type": "aclTensor *",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 参数名 | x |\n"
@@ -195,7 +195,7 @@ class TestExtractParamDesc:
     def test_empty_when_no_description_row(self):
         param = {
             "param_type": "aclTensor *",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 参数名 | x |\n"
@@ -211,7 +211,7 @@ class TestExtractParamDesc:
     def test_empty_when_wu_value(self):
         param = {
             "param_type": "int64_t",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 描述 | 无 |\n"
@@ -228,7 +228,7 @@ class TestCombinedExtraction:
     def test_both_fields_extracted(self):
         param = {
             "param_type": "aclTensor *",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 参数名 | x |\n"
@@ -248,7 +248,7 @@ class TestCombinedExtraction:
     def test_non_tensor_with_desc(self):
         param = {
             "param_type": "int64_t",
-            "description": (
+            "llm_description": (
                 "| 属性 | 值 |\n"
                 "|------|-----|\n"
                 "| 参数名 | offset |\n"

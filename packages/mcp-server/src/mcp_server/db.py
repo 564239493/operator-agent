@@ -375,6 +375,64 @@ class Database:
                     )
         except sqlite3.OperationalError:
             pass
+        # 迁移：v30 — 新增 tasks + task_items 表
+        try:
+            self._conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name            TEXT NOT NULL,
+                    status          TEXT NOT NULL DEFAULT 'pending',
+                    total_count     INTEGER NOT NULL,
+                    completed_count INTEGER NOT NULL DEFAULT 0,
+                    failed_count    INTEGER NOT NULL DEFAULT 0,
+                    upload_dir      TEXT NOT NULL,
+                    created_at      TEXT DEFAULT (datetime('now')),
+                    updated_at      TEXT DEFAULT (datetime('now'))
+                );
+
+                CREATE TABLE IF NOT EXISTS task_items (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task_id         INTEGER NOT NULL REFERENCES tasks(id),
+                    seq             INTEGER NOT NULL,
+                    operator_name   TEXT NOT NULL,
+                    file_path       TEXT NOT NULL,
+                    status          TEXT NOT NULL DEFAULT 'pending',
+                    doc_id          INTEGER,
+                    error           TEXT,
+                    started_at      TEXT,
+                    finished_at     TEXT,
+                    created_at      TEXT DEFAULT (datetime('now'))
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_task_items_task_id
+                    ON task_items(task_id);
+                """
+            )
+        except sqlite3.OperationalError:
+            pass
+        # 迁移：v31 — 新增 llm_description 列
+        try:
+            self._conn.execute(
+                "ALTER TABLE parameters ADD COLUMN llm_description "
+                "TEXT NOT NULL DEFAULT ''"
+            )
+        except sqlite3.OperationalError:
+            pass
+        # 迁移：v32 — description → llm_description 回填 + 删除 description 列
+        try:
+            # 回填：llm_description 为空时从 description 复制
+            self._conn.execute(
+                "UPDATE parameters SET llm_description = description "
+                "WHERE (llm_description IS NULL OR llm_description = '') "
+                "AND description IS NOT NULL AND description != ''"
+            )
+        except sqlite3.OperationalError:
+            pass
+        try:
+            self._conn.execute("ALTER TABLE parameters DROP COLUMN description")
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
 
     @property

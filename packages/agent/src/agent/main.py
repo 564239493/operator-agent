@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from agent.core.config import settings
 from agent.core.logging import setup_logging
 from agent.routes.query import router as query_router
+from agent.routes.task import router as task_router
 from agent.routes.upload import router as upload_router
 
 
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
 
     app.include_router(upload_router)
     app.include_router(query_router)
+    app.include_router(task_router)
 
     @app.get("/health")
     async def health() -> dict:

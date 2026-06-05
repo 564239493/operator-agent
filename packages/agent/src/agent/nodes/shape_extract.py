@@ -50,9 +50,9 @@ async def shape_extract_node(state: PipelineState) -> dict[str, Any]:
             logger.info("ShapeExtract: no parameters in state for doc_id=%s, skipping", doc_id)
             return {"error": None}
 
-        described = [p for p in params if p.get("description")]
+        described = [p for p in params if p.get("llm_description")]
         if not described:
-            logger.info("ShapeExtract: no parameters with descriptions for doc_id=%s, skipping", doc_id)
+            logger.info("ShapeExtract: no parameters with llm_description for doc_id=%s, skipping", doc_id)
             return {"error": None}
 
         llm = _create_llm()
@@ -96,7 +96,7 @@ async def _extract_shape(llm: ChatOpenAI, param: dict) -> dict | None:
     """Call LLM to extract shape for a single parameter."""
     param_name = param.get("param_name", "")
     function_name = param.get("function_name", "")
-    description = param.get("description", "")
+    description = param.get("llm_description", "")
 
     prompt = SHAPE_EXTRACT_PROMPT.format(param_name=param_name, params_text=description)
     response = await llm.ainvoke(prompt)

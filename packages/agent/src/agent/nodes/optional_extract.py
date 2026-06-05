@@ -50,7 +50,7 @@ async def optional_extract_node(state: PipelineState) -> dict[str, Any]:
             logger.info("OptionalExtract: no parameters in state for doc_id=%s, skipping", doc_id)
             return {"error": None}
 
-        described = [p for p in params if p.get("description")]
+        described = [p for p in params if p.get("llm_description")]
         if not described:
             logger.info("OptionalExtract: no parameters with descriptions for doc_id=%s, skipping", doc_id)
             return {"error": None}
@@ -93,7 +93,7 @@ async def _extract_optional(llm: ChatOpenAI, param: dict) -> dict | None:
     """Call LLM to judge optionality for a single parameter."""
     param_name = param.get("param_name", "")
     function_name = param.get("function_name", "")
-    description = param.get("description", "")
+    description = param.get("llm_description", "")
 
     name_has_optional = "optional" in param_name.lower()
 

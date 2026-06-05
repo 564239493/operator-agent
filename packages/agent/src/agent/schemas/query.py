@@ -29,7 +29,7 @@ class ParameterItem(BaseModel):
     param_type: str = ""
     direction: str = "input"
     src_content: str = ""
-    description: str | None = None
+    llm_description: str = ""
     data_type: str | None = None
     data_format: str | None = None
     shape: str | None = None

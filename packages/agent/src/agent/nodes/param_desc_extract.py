@@ -97,14 +97,14 @@ async def param_desc_extract_node(state: PipelineState) -> dict[str, Any]:
                     "param_type": param.get("param_type", ""),
                     "direction": direction,
                     "src_content": param.get("src_content", ""),
-                    "description": desc,
+                    "llm_description": desc,
                     "data_type": "",
                     "data_format": "",
                     "shape": "",
                 }
 
         results = await asyncio.gather(*[_extract_one(p) for p in with_src])
-        all_updates = [r for r in results if r is not None and r.get("description")]
+        all_updates = [r for r in results if r is not None and r.get("llm_description")]
 
         if all_updates:
             result = await _mcp_client.update_param_descriptions(doc_id, all_updates)

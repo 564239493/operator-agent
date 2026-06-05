@@ -269,13 +269,13 @@ async def _batch_extract_allowed_range(
         async with sem:
             key = (param["function_name"], param["param_name"])
             c_type = param.get("param_type", "")
-            param_desc = param.get("param_desc", "") or ""
+            llm_desc = param.get("llm_description", "") or ""
 
             context_parts: list[str] = []
             if constraints_text:
                 context_parts.append(f"## 约束说明\n{constraints_text}")
-            if param_desc:
-                context_parts.append(f"## 参数使用说明\n{param_desc}")
+            if llm_desc:
+                context_parts.append(f"## 参数使用说明\n{llm_desc}")
 
             context_text = "\n\n".join(context_parts) if context_parts else ""
             if not context_text.strip():

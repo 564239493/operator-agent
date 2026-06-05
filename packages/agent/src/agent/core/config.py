@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     project_name: str = "operator-agent"
     debug: bool = False
     operators_dir: str = "operators"
+    uploads_dir: str = "uploads"
     database_path: str = "data/operator_agent.db"
     log_level: str = "INFO"
     mcp_server_command: str = f"{sys.executable} -m mcp_server"
