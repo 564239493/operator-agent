@@ -63,7 +63,7 @@ def query_params_by_doc_id(doc_id: int) -> list[dict]:
     rows = db.conn.execute(
         "SELECT id, function_name, param_name, param_type, direction, description, "
         "dtype_desc, dformat_desc, shape, src_content, is_optional, "
-        "is_support_discontinuous, array_length, allowed_range_value "
+        "is_support_discontinuous, array_length, allowed_range_value, param_constraint "
         "FROM parameters WHERE doc_id = ? "
         "ORDER BY id",
         (doc_id,),
@@ -84,9 +84,52 @@ def query_params_by_doc_id(doc_id: int) -> list[dict]:
             "is_support_discontinuous": r[11],
             "array_length": r[12],
             "allowed_range_value": r[13],
+            "param_constraint": r[14],
         }
         for r in rows
     ]
+
+
+def query_relations_by_doc_id(doc_id: int) -> list[dict]:
+    """Query all param_relations for a specific document version by doc_id."""
+    db = get_db()
+    rows = db.conn.execute(
+        "SELECT id, function_name, relation_type, precondition, description, "
+        "params, source_citation, relation_object "
+        "FROM param_relations WHERE doc_id = ? "
+        "ORDER BY id",
+        (doc_id,),
+    ).fetchall()
+    return [
+        {
+            "id": r[0],
+            "function_name": r[1],
+            "relation_type": r[2],
+            "precondition": r[3],
+            "description": r[4],
+            "params": json.loads(r[5]) if r[5] else [],
+            "source_citation": r[6],
+            "relation_object": json.loads(r[7]) if r[7] else {},
+        }
+        for r in rows
+    ]
+
+
+def query_json_constraints_by_doc_id(doc_id: int) -> dict | None:
+    """Query json_constraints from document_versions by doc_id."""
+    db = get_db()
+    row = db.conn.execute(
+        "SELECT json_constraints, operator_id FROM document_versions WHERE id = ?",
+        (doc_id,),
+    ).fetchone()
+    if not row:
+        return None
+    jc_raw = row[0] or "{}"
+    try:
+        jc = json.loads(jc_raw) if isinstance(jc_raw, str) else jc_raw
+    except (json.JSONDecodeError, TypeError):
+        jc = {}
+    return {"json_constraints": jc, "doc_id": doc_id}
 
 
 def update_param_src_content(param_id: int, src_content: str) -> bool:

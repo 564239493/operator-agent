@@ -168,14 +168,16 @@ async def build_param_constraint_node(state: PipelineState) -> dict[str, Any]:
             })
 
         # Step 6: Batch update
+        updated_count = 0
         if updates:
             result = await _mcp_client.update_param_constraint(doc_id, updates)
+            updated_count = result.get("updated", 0)
             logger.info(
                 "BuildParamConstraint: updated %d/%d params (doc_id=%s)",
-                result.get("updated", 0), len(updates), doc_id,
+                updated_count, len(updates), doc_id,
             )
 
-        return {"error": None}
+        return {"error": None, "params_count": len(updates), "updated": updated_count}
 
     except Exception as e:
         logger.exception("BuildParamConstraint failed for %s", operator_name)

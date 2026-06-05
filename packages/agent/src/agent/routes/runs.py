@@ -12,7 +12,9 @@ from pydantic import BaseModel
 
 from agent.db import (
     query_events as db_query_events,
+    query_json_constraints_by_doc_id as db_query_json_constraints,
     query_params_by_doc_id as db_query_params_by_doc_id,
+    query_relations_by_doc_id as db_query_relations_by_doc_id,
     query_run as db_query_run,
     query_runs as db_query_runs,
     update_param_src_content as db_update_param_src_content,
@@ -169,3 +171,52 @@ async def update_param_src_content(param_id: int, body: UpdateSrcContentBody):
     if not updated:
         return {"success": False, "error": "Parameter not found"}
     return {"success": True, "param_id": param_id}
+
+
+@router.get("/runs/{run_id}/relations")
+async def get_run_relations(run_id: str):
+    """Return all param_relations for a pipeline run.
+
+    Looks up doc_id from pipeline_runs, then queries param_relations table.
+    """
+    db_run = db_query_run(run_id)
+    if not db_run:
+        return {"success": False, "error": "Run not found"}
+
+    doc_id = db_run.get("doc_id")
+    if not doc_id:
+        return {"success": False, "error": "Run has no doc_id yet — pipeline may still be running"}
+
+    relations = db_query_relations_by_doc_id(doc_id)
+    return {
+        "success": True,
+        "run_id": run_id,
+        "doc_id": doc_id,
+        "operator_name": db_run.get("operator_name"),
+        "count": len(relations),
+        "relations": relations,
+    }
+
+
+@router.get("/runs/{run_id}/json-constraints")
+async def get_run_json_constraints(run_id: str):
+    """Return json_constraints from document_versions for a pipeline run."""
+    db_run = db_query_run(run_id)
+    if not db_run:
+        return {"success": False, "error": "Run not found"}
+
+    doc_id = db_run.get("doc_id")
+    if not doc_id:
+        return {"success": False, "error": "Run has no doc_id yet — pipeline may still be running"}
+
+    result = db_query_json_constraints(doc_id)
+    if not result:
+        return {"success": False, "error": "No json_constraints found for this run"}
+
+    return {
+        "success": True,
+        "run_id": run_id,
+        "doc_id": doc_id,
+        "operator_name": db_run.get("operator_name"),
+        "json_constraints": result.get("json_constraints", {}),
+    }

@@ -74,8 +74,27 @@
     font-size:.82rem;line-height:1.7;white-space:pre;overflow-x:auto}
   .main .callout{padding:.6rem 1rem;margin:1rem 0;border-radius:0 6px 6px 0;
     border-left:4px solid;background:#fffbeb;border-color:#f59e0b}
-  .main .mermaid{display:flex;justify-content:center;margin:1.5rem 0;overflow-x:auto}
+  .main .mermaid{display:flex;justify-content:center;margin:1.5rem 0;overflow-x:auto;position:relative}
   .main .mermaid svg{max-width:100%;height:auto}
+  .mermaid-zoom-btn{position:absolute;top:8px;right:8px;z-index:10;display:flex;align-items:center;gap:5px;
+    padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.92);
+    color:var(--text-secondary);font-size:.82rem;cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .mermaid-zoom-btn:hover{background:var(--sidebar-active-bg);color:var(--sidebar-active-border);border-color:var(--sidebar-active-border)}
+  .mermaid-fullscreen{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);
+    display:none;flex-direction:column;backdrop-filter:blur(4px)}
+  .mermaid-fullscreen.open{display:flex}
+  .mermaid-fs-toolbar{display:flex;align-items:center;gap:10px;padding:10px 20px;
+    background:rgba(30,41,59,.95);border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0}
+  .mermaid-fs-toolbar span{color:#e2e8f0;font-size:.85rem;font-weight:500}
+  .mermaid-fs-toolbar button{padding:4px 12px;border-radius:5px;border:1px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.08);color:#e2e8f0;font-size:.8rem;cursor:pointer;transition:all .15s}
+  .mermaid-fs-toolbar button:hover{background:rgba(255,255,255,.18)}
+  .mermaid-fs-toolbar .fs-close{margin-left:auto;background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3);color:#fca5a5}
+  .mermaid-fs-toolbar .fs-close:hover{background:rgba(239,68,68,.3)}
+  .mermaid-fs-canvas{flex:1;overflow:hidden;cursor:grab;position:relative}
+  .mermaid-fs-canvas.grabbing{cursor:grabbing}
+  .mermaid-fs-inner{transform-origin:0 0;transition:transform .1s ease-out;position:absolute;top:0;left:0}
+  .mermaid-fs-inner svg{max-width:none!important}
   .sidebar-toggle{display:none;position:fixed;bottom:1rem;left:1rem;z-index:1000;
     width:44px;height:44px;border-radius:50%;border:1px solid var(--border);
     background:var(--sidebar-bg);cursor:pointer;font-size:1.3rem;
@@ -319,6 +338,8 @@
 </section>
 <section class="content-section" id="sec-pipeline-arch">
 <h1>核心流程：文档上传 Pipeline</h1><h2>整体架构</h2>
+<div style="position:relative">
+<button class="mermaid-zoom-btn" id="mermaidZoomBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> 放大查看</button>
 <pre class="mermaid">
 flowchart TD
     A([上传 .md 文件]) --> B["FastAPI upload_document()\n提取 operator_name\n计算 SHA256 content_hash\n构造初始状态"]
@@ -389,6 +410,7 @@ flowchart TD
     style AR fill:#faf5ff,stroke:#805ad5
     style O fill:#fff5f5,stroke:#e53e3e,color:#742a2a
 </pre>
+</div>
 </section>
 <section class="content-section" id="sec-node1">
 <h1>节点1: init_doc_node（顺序执行）</h1>
@@ -1512,6 +1534,23 @@ constraints_result (
 </section>
 </div>
 </div>
+
+<!-- Mermaid Fullscreen Overlay -->
+<div class="mermaid-fullscreen" id="mermaidFullscreen">
+  <div class="mermaid-fs-toolbar">
+    <span>📐 Pipeline 架构图</span>
+    <button id="mermaidFsZoomIn">＋ 放大</button>
+    <button id="mermaidFsZoomOut">－ 缩小</button>
+    <button id="mermaidFsReset">⊡ 适应窗口</button>
+    <span id="mermaidFsZoom" style="font-family:monospace;min-width:42px;text-align:center">100%</span>
+    <span style="color:#94a3b8;font-size:.75rem">滚轮缩放 · 拖拽平移 · ESC 关闭</span>
+    <button class="fs-close" id="mermaidFsClose">✕ 关闭</button>
+  </div>
+  <div class="mermaid-fs-canvas" id="mermaidFsCanvas">
+    <div class="mermaid-fs-inner" id="mermaidFsInner"></div>
+  </div>
+</div>
+
 <script>
 (function() {
   var sections = document.querySelectorAll('.content-section');
@@ -1584,6 +1623,110 @@ constraints_result (
   var hash = location.hash.replace('#', '');
   var def = (hash && document.getElementById(hash)) ? hash : 'sec-overview';
   showSection(def);
+
+  // ── Mermaid Fullscreen Zoom ──
+  var fsOverlay = document.getElementById('mermaidFullscreen');
+  var fsCanvas = document.getElementById('mermaidFsCanvas');
+  var fsInner = document.getElementById('mermaidFsInner');
+  var fsZoomLabel = document.getElementById('mermaidFsZoom');
+  var zoomBtn = document.getElementById('mermaidZoomBtn');
+
+  var fsScale = 1, fsX = 0, fsY = 0, fsDragging = false, fsStartX = 0, fsStartY = 0, fsLastX = 0, fsLastY = 0;
+
+  function fsUpdateTransform() {
+    fsInner.style.transform = 'translate(' + fsX + 'px,' + fsY + 'px) scale(' + fsScale + ')';
+    fsZoomLabel.textContent = Math.round(fsScale * 100) + '%';
+  }
+
+  function fsFitToScreen() {
+    var svg = fsInner.querySelector('svg');
+    if (!svg) return;
+    var svgW = svg.getBoundingClientRect().width / fsScale;
+    var svgH = svg.getBoundingClientRect().height / fsScale;
+    var cW = fsCanvas.clientWidth;
+    var cH = fsCanvas.clientHeight;
+    fsScale = Math.min(cW / svgW, cH / svgH) * 0.92;
+    fsX = (cW - svgW * fsScale) / 2;
+    fsY = (cH - svgH * fsScale) / 2;
+    fsUpdateTransform();
+  }
+
+  function fsOpen() {
+    var src = document.querySelector('#sec-pipeline-arch .mermaid');
+    if (!src) return;
+    var svg = src.querySelector('svg');
+    if (!svg) return;
+    fsInner.innerHTML = svg.outerHTML;
+    fsOverlay.classList.add('open');
+    fsScale = 1; fsX = 0; fsY = 0;
+    requestAnimationFrame(function() { fsFitToScreen(); });
+  }
+
+  function fsClose() {
+    fsOverlay.classList.remove('open');
+    fsInner.innerHTML = '';
+  }
+
+  if (zoomBtn) {
+    zoomBtn.addEventListener('click', fsOpen);
+  }
+
+  document.getElementById('mermaidFsClose').addEventListener('click', fsClose);
+  document.getElementById('mermaidFsReset').addEventListener('click', fsFitToScreen);
+  document.getElementById('mermaidFsZoomIn').addEventListener('click', function() {
+    fsScale = Math.min(fsScale * 1.25, 10);
+    fsUpdateTransform();
+  });
+  document.getElementById('mermaidFsZoomOut').addEventListener('click', function() {
+    fsScale = Math.max(fsScale / 1.25, 0.2);
+    fsUpdateTransform();
+  });
+
+  fsOverlay.addEventListener('click', function(e) {
+    if (e.target === fsOverlay) fsClose();
+  });
+
+  fsCanvas.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var rect = fsCanvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    var oldScale = fsScale;
+    var factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    fsScale = Math.min(Math.max(fsScale * factor, 0.15), 10);
+    fsX = mx - (mx - fsX) * (fsScale / oldScale);
+    fsY = my - (my - fsY) * (fsScale / oldScale);
+    fsUpdateTransform();
+  }, { passive: false });
+
+  fsCanvas.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    fsDragging = true;
+    fsStartX = e.clientX - fsX;
+    fsStartY = e.clientY - fsY;
+    fsCanvas.classList.add('grabbing');
+  });
+  window.addEventListener('mousemove', function(e) {
+    if (!fsDragging) return;
+    fsX = e.clientX - fsStartX;
+    fsY = e.clientY - fsStartY;
+    fsInner.style.transition = 'none';
+    fsUpdateTransform();
+  });
+  window.addEventListener('mouseup', function() {
+    if (!fsDragging) return;
+    fsDragging = false;
+    fsCanvas.classList.remove('grabbing');
+    fsInner.style.transition = 'transform .1s ease-out';
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (!fsOverlay.classList.contains('open')) return;
+    if (e.key === 'Escape') fsClose();
+    if (e.key === '+' || e.key === '=') { fsScale = Math.min(fsScale * 1.2, 10); fsUpdateTransform(); }
+    if (e.key === '-') { fsScale = Math.max(fsScale / 1.2, 0.2); fsUpdateTransform(); }
+    if (e.key === '0') fsFitToScreen();
+  });
 })();
 </script>
 </body>

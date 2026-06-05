@@ -194,7 +194,7 @@ async def build_param_relations_node(state: PipelineState) -> dict[str, Any]:
             len(grouped), doc_id,
         )
 
-        return {"error": None}
+        return {"error": None, "relations_count": len(relations), "platforms_count": len(grouped)}
 
     except Exception as e:
         logger.exception("BuildParamRelations failed for %s", operator_name)

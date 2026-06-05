@@ -35,9 +35,9 @@ _AGENT_MAP: dict[str, str] = {
     "return_code_extract": "doc",
     "dtype_combo_extract": "doc",
     "param_relation_extract": "doc",
-    "build_param_relations": "doc",
-    "build_param_constraint": "doc",
-    "assemble_result": "doc",
+    "build_param_relations": "constraint",
+    "build_param_constraint": "constraint",
+    "assemble_result": "constraint",
 }
 
 
@@ -185,6 +185,9 @@ def _node_label(node_id: str) -> str:
         "return_code_extract": "返回码",
         "dtype_combo_extract": "数据类型组合",
         "param_relation_extract": "参数约束关系",
+        "build_param_relations": "参数关系构建",
+        "build_param_constraint": "参数约束构建",
+        "assemble_result": "约束结果组装",
     }
     return labels.get(node_id, node_id)
 
@@ -230,6 +233,12 @@ def _node_done_msg(node_id: str, result: dict) -> str:
         return "数据类型组合提取完成"
     elif node_id == "param_relation_extract":
         return "参数约束关系提取完成"
+    elif node_id == "build_param_relations":
+        return "参数关系构建完成"
+    elif node_id == "build_param_constraint":
+        return "参数约束构建完成"
+    elif node_id == "assemble_result":
+        return "约束结果组装完成"
     return f"{_node_label(node_id)} 完成"
 
 
@@ -263,5 +272,8 @@ def _node_progress_pct(node_id: str) -> int:
         "return_code_extract": 85,
         "dtype_combo_extract": 90,
         "param_relation_extract": 95,
+        "build_param_relations": 96,
+        "build_param_constraint": 98,
+        "assemble_result": 100,
     }
     return pcts.get(node_id, 50)
