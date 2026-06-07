@@ -36,8 +36,28 @@ class Database:
         self._conn: sqlite3.Connection | None = None
 
     def connect(self) -> None:
-        self._conn = sqlite3.connect(str(self._db_path))
+        # Default isolation_level is "" (autocommit per statement) — keep that,
+        # we just want explicit commits on writes (existing callers do that).
+        # `check_same_thread=False` is required because the MCP server's stdio
+        # event-loop and the FastAPI main app both pass this connection to
+        # threads; SQLite's thread checks otherwise raise ProgrammingError.
+        self._conn = sqlite3.connect(
+            str(self._db_path),
+            check_same_thread=False,
+            timeout=30.0,  # seconds to wait for the GIL/connection lock
+        )
+        # ── Concurrency hardening ──────────────────────────────────────
+        # WAL mode lets one writer + many readers proceed in parallel, but
+        # a second writer still gets SQLITE_BUSY immediately unless we
+        # set busy_timeout.  With WAL + busy_timeout the second writer
+        # waits for the first to commit instead of failing the request.
+        # The MCP server is spawned as a fresh subprocess per tool call
+        # (see agent.mcp_client.MCPClient._call_tool), so two writers can
+        # land at the same time when the agent main process and the MCP
+        # subprocess both touch the SQLite file.
         self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")  # WAL: safe with NORMAL
+        self._conn.execute("PRAGMA busy_timeout=30000")   # wait up to 30s for lock
         self._conn.execute("PRAGMA foreign_keys=ON")
         self._conn.executescript(_load_schema())
         # 迁移：v2 — 新增 is_optional 列

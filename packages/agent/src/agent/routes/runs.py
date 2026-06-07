@@ -125,11 +125,32 @@ async def stream_run(run_id: str, request: Request, since_seq: int = Query(defau
 
 @router.get("/operators/{operator_name}/latest-run")
 async def get_latest_run_for_operator(operator_name: str):
+    """Return the most recent pipeline run for ``operator_name``.
+
+    Prefers runs that carry a ``doc_id`` (i.e. completed DocProcessorAgent /
+    ExtractorAgent runs that produced ``json_constraints``) over pure
+    GeneratorAgent runs, which never set ``doc_id`` and would otherwise
+    shadow the constraint-producing run when sorting by ``created_at DESC``.
+
+    The fallback to the most recent run of *any* type is preserved so
+    callers that genuinely want "the most recent activity for this
+    operator" still get an answer; they just get the
+    constraint-producing one first.
+    """
     runs = db_query_runs(None, 200)
     match = [r for r in runs if r.get("operator_name") == operator_name]
     if not match:
         return {"success": False, "error": "No runs for this operator"}
-    run = match[0]
+
+    # A run with a doc_id came from the DocProcessorAgent / ExtractorAgent
+    # path (init_doc → update_run_doc_id) and therefore has json_constraints
+    # attached.  GeneratorAgent runs never set doc_id, so we filter them
+    # out of the "primary" candidate list.  See the trace in the bug
+    # report: without this, the most recent (failed) generator run would
+    # shadow the still-valid extractor run.
+    with_doc = [r for r in match if r.get("doc_id")]
+    run = with_doc[0] if with_doc else match[0]
+
     events = db_query_events(run["run_id"])
     return {"success": True, "run": run, "events": events}
 

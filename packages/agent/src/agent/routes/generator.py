@@ -13,6 +13,7 @@ The 5 sub-steps are the same nodes used by the main pipeline:
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 
 from fastapi import APIRouter, Request
@@ -65,6 +66,20 @@ def _build_case_subgraph():
     return graph.compile(name="case-pipeline")
 
 
+def _synthetic_content_hash(operator_name: str, count: int, seed: int, run_id: str) -> str:
+    """Generate a deterministic content_hash for a generator run.
+
+    The DocProcessorAgent's content_hash fingerprints the uploaded
+    document. The GeneratorAgent has no document of its own — its
+    "input" is the operator_name + the parameters the user picked.  We
+    fold those plus the run_id into a sha256 so each invocation gets a
+    distinct, reproducible fingerprint that satisfies the NOT NULL
+    constraint on ``pipeline_runs.content_hash``.
+    """
+    payload = f"generator:{operator_name}:{count}:{seed}:{run_id}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 @router.post("/generator/run", response_model=GeneratorRunResponse)
 async def run_generator(body: GeneratorRunRequest, request: Request) -> GeneratorRunResponse:
     """Trigger the GeneratorAgent 5-step case-generation pipeline asynchronously.
@@ -84,6 +99,26 @@ async def run_generator(body: GeneratorRunRequest, request: Request) -> Generato
     manager = _get_manager(request)
     run = manager.create_run(operator_name)
     run_id = run.run_id
+
+    # ── Persist the pipeline_runs row IMMEDIATELY so the FK on
+    # pipeline_events.run_id is satisfied by the time _run_case_pipeline
+    # calls db_save_events(...).  Without this the insert would fail with
+    # "FOREIGN KEY constraint failed" (see git history).  Mirror the
+    # pattern in routes/upload.py.
+    from agent.db import create_run as db_create_run
+
+    try:
+        db_create_run(
+            run_id,
+            operator_name,
+            _synthetic_content_hash(operator_name, count, seed, run_id),
+        )
+    except Exception as e:
+        # Don't fail the request just because the bookkeeping row didn't
+        # land — the in-memory run can still produce cases.  The error
+        # path below will still try db_save_events, which will also fail
+        # on the same FK, but it logs and continues.
+        logger.warning("Failed to insert pipeline_runs row for generator %s: %s", run_id, e)
 
     logger.info(
         "POST /generator/run: op=%s count=%d seed=%d run_id=%s",
@@ -140,7 +175,7 @@ async def _run_case_pipeline(
                 "data": sse["data"],
             })
 
-        from agent.db import save_events as db_save_events
+        from agent.db import complete_run as db_complete_run, save_events as db_save_events
 
         try:
             db_save_events(run_id, events_payload)
@@ -151,6 +186,24 @@ async def _run_case_pipeline(
         cases_path = result.get("cases_path", "")
         error = result.get("error")
         status = "completed" if not error else "failed"
+
+        # ── Mirror upload.py: write the final run row (status +
+        # result_json) so the DB reflects what really happened.  Without
+        # this, every generator run would stay in 'running' status
+        # forever in the DB even though the in-memory state is correct.
+        try:
+            db_complete_run(
+                run_id,
+                {
+                    "status": status,
+                    "operator_name": operator_name,
+                    "cases_count": cases_count,
+                    "cases_path": cases_path,
+                },
+                error=error,
+            )
+        except Exception as e:
+            logger.warning("Failed to complete generator run in DB: %s", e)
 
         manager.emit(EventType.WORKFLOW_END, run_id, run.spans[run_id], {
             "agent_id": "case",
@@ -175,4 +228,11 @@ async def _run_case_pipeline(
         manager.emit(EventType.WORKFLOW_ERROR, run_id, run.spans[run_id], {
             "agent_id": "case", "error": str(e),
         })
+        # Try to mark the DB row as failed too — otherwise the row
+        # would sit in 'running' status forever, hiding the crash.
+        try:
+            from agent.db import complete_run as db_complete_run
+            db_complete_run(run_id, {}, error=str(e))
+        except Exception as inner_e:
+            logger.warning("Failed to mark generator run as failed in DB: %s", inner_e)
         manager.complete_run(run_id, error=str(e))

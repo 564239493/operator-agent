@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import json
 import logging
+import random
 import sqlite3
+import time
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +19,16 @@ from mcp_server.db import get_db
 logger = logging.getLogger(__name__)
 
 CASES_DIR_NAME = "cases"
+
+# ── Retry policy for transient SQLite lock errors ─────────────────────────
+# busy_timeout in db.py already lets SQLite wait up to 30s for the lock, but
+# we still wrap the write in a small retry loop to absorb:
+#   - the brief window where the WAL has been written but the holder hasn't
+#     committed yet (older SQLite versions raised SQLITE_BUSY_LOCKED here)
+#   - "database is locked" from non-SQLite sources (e.g. fsync on Windows)
+#   - very long contention during a long-running LLM call that is mid-write
+_MAX_INSERT_RETRIES = 5
+_BASE_RETRY_DELAY_S = 0.1  # 100ms → 200ms → 400ms → 800ms → 1.6s (cap)
 
 
 # ── Schema migration (idempotent) ────────────────────────────────────────────
@@ -74,13 +86,16 @@ def do_save_test_cases(
     if not isinstance(cases_list, list):
         raise ValueError("cases_json must deserialize to a list of test case records")
 
-    # Persist to DB.
-    conn = get_db().conn
-    conn.execute(
+    # Persist to DB.  Write goes through a short retry loop because the
+    # SQLite file is shared with the main agent process; even with
+    # busy_timeout set on the connection (see mcp_server/db.py), a few
+    # edge cases still surface as "database is locked" — most often on
+    # Windows when an antivirus / fsync step holds the file briefly, or
+    # when the WAL checkpoint runs in parallel with our write.
+    _execute_with_retry(
         "INSERT INTO test_cases (operator_name, cases_json, source) VALUES (?, ?, ?)",
         (operator_name, cases_json, source),
     )
-    conn.commit()
 
     # Persist to disk.
     out_path = _resolve_output_path(operator_name, output_dir)
@@ -156,3 +171,62 @@ def _resolve_output_path(operator_name: str, output_dir: str | None) -> Path:
         #   operator-agent/          -> parents[5]  ← project root
         base = Path(__file__).resolve().parents[5] / CASES_DIR_NAME
     return base / f"{operator_name}_cases.json"
+
+
+def _is_transient_lock_error(exc: BaseException) -> bool:
+    """Return True if the SQLite exception is a transient lock we should retry."""
+    if isinstance(exc, sqlite3.OperationalError):
+        msg = str(exc).lower()
+        # Common phrasings across Python versions and SQLite builds:
+        #   "database is locked"
+        #   "database table is locked"
+        #   "lock timeout"  (from busy_timeout overflow)
+        return ("locked" in msg) or ("lock timeout" in msg)
+    return False
+
+
+def _execute_with_retry(sql: str, params: tuple) -> None:
+    """Run ``sql`` with ``params`` and commit, retrying transient lock errors.
+
+    The retry budget is intentionally small (max ~3.1s total) — combined with
+    the 30s ``busy_timeout`` set on the connection, by the time we land here
+    SQLite has *already* waited a long time for the lock.  These retries
+    cover the last mile: cases where the lock was released and re-acquired
+    by another writer before we could re-issue the statement.
+    """
+    conn = get_db().conn
+    last_exc: BaseException | None = None
+    for attempt in range(_MAX_INSERT_RETRIES):
+        try:
+            conn.execute(sql, params)
+            conn.commit()
+            if attempt > 0:
+                logger.info(
+                    "save_test_cases: insert succeeded on retry #%d", attempt,
+                )
+            return
+        except Exception as exc:
+            if not _is_transient_lock_error(exc):
+                # Real error (NOT NULL, FK, etc.) — don't retry.
+                raise
+            last_exc = exc
+            # Rollback any partial state from this failed attempt so the
+            # next retry starts clean.
+            try:
+                conn.rollback()
+            except sqlite3.OperationalError:
+                pass
+            if attempt == _MAX_INSERT_RETRIES - 1:
+                break
+            # Exponential backoff with jitter to avoid lock-step retries
+            # when many requests pile up against the same lock holder.
+            delay = min(_BASE_RETRY_DELAY_S * (2 ** attempt), 1.6)
+            delay += random.uniform(0, _BASE_RETRY_DELAY_S)
+            logger.warning(
+                "save_test_cases: %s (attempt %d/%d), retrying in %.2fs",
+                exc, attempt + 1, _MAX_INSERT_RETRIES, delay,
+            )
+            time.sleep(delay)
+    # All retries exhausted.
+    assert last_exc is not None
+    raise last_exc
