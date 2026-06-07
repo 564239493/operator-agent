@@ -164,6 +164,44 @@
   .json-tree li.collapsed > .jc::before { content: '\25B6'; }
   .json-tree li:not(.collapsed) > .jc::before { content: '\25BC'; }
   .json-tree .jb-open, .json-tree .jb-close { color: #6b7280; }
+
+  /* ── Test Cases Generator module ─────────────────────────────────────── */
+  .case-gen-form { display: grid; grid-template-columns: 1fr 120px 120px auto; gap: 10px; align-items: end; margin-bottom: 12px; }
+  .case-gen-form label { display: block; font-size: .8rem; color: #4b5563; margin-bottom: 4px; }
+  .case-gen-form input, .case-gen-form select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: .9rem; }
+  .case-gen-form input:focus, .case-gen-form select:focus { outline: none; border-color: #4f46e5; }
+
+  .case-list { display: flex; flex-direction: column; gap: 10px; }
+  .case-card { border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; transition: .15s; overflow: hidden; }
+  .case-card:hover { border-color: #4f46e5; box-shadow: 0 1px 4px rgba(79,70,229,.12); }
+  .case-card-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; cursor: pointer; }
+  .case-card-head .case-id { background: #4f46e5; color: #fff; border-radius: 6px; padding: 2px 10px; font-size: .8rem; font-weight: 700; }
+  .case-card-head .case-name { font-weight: 600; font-size: .95rem; color: #1f2937; flex: 1; }
+  .case-card-head .case-arrow { color: #6b7280; font-size: .9rem; transition: transform .2s; }
+  .case-card.open .case-card-head .case-arrow { transform: rotate(90deg); }
+  .case-card-body { display: none; padding: 14px 16px; }
+  .case-card.open .case-card-body { display: block; }
+  .case-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .case-summary .pill { font-size: .75rem; padding: 3px 10px; border-radius: 10px; font-weight: 600; }
+  .pill-tensor { background: #dbeafe; color: #1e40af; }
+  .pill-attrs { background: #fef3c7; color: #92400e; }
+  .pill-required { background: #dcfce7; color: #166534; }
+  .pill-optional { background: #f3f4f6; color: #6b7280; }
+
+  .case-inputs-table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-bottom: 10px; }
+  .case-inputs-table th { background: #f3f4f6; padding: 6px 10px; text-align: left; border: 1px solid #e5e7eb; font-weight: 600; color: #374151; }
+  .case-inputs-table td { padding: 6px 10px; border: 1px solid #e5e7eb; vertical-align: top; font-family: 'Consolas','Monaco','Courier New',monospace; }
+  .case-inputs-table tr:hover td { background: #f9fafb; }
+
+  .case-raw { background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: .78rem; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 320px; overflow-y: auto; margin-top: 8px; }
+
+  .case-actions { display: flex; gap: 8px; margin: 8px 0 14px; flex-wrap: wrap; }
+  .case-actions a.btn-link { display: inline-block; padding: 6px 14px; background: #6b7280; color: #fff; border-radius: 6px; text-decoration: none; font-size: .85rem; }
+  .case-actions a.btn-link:hover { background: #4b5563; }
+
+  .case-meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 16px; margin: 10px 0; padding: 10px 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; }
+  .case-meta-grid .meta-item { font-size: .82rem; color: #4b5563; }
+  .case-meta-grid .meta-item strong { color: #1f2937; display: block; font-size: .95rem; font-family: 'Consolas','Monaco','Courier New',monospace; }
   .json-tree .jcount { color: #6b7280; font-size: .75rem; margin-left: 6px; font-style: italic; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -212,6 +250,10 @@
       <button class="nav-item" onclick="switchTab('result', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         约束结果
+      </button>
+      <button class="nav-item" onclick="switchTab('cases', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        测试用例生成
       </button>
     </nav>
   </aside>
@@ -442,6 +484,53 @@
     </div>
   </div>
 
+  <!-- Test Cases Generator Panel -->
+  <div class="panel" id="panelCases">
+    <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">测试用例生成 (GeneratorAgent)</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="secondary" onclick="loadAllCaseOperators()">刷新</button>
+        </div>
+      </div>
+
+      <!-- Generate new cases form -->
+      <div style="padding:14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px">
+        <div style="font-weight:600;color:#374151;margin-bottom:8px">生成新用例</div>
+        <div class="case-gen-form">
+          <div>
+            <label>算子</label>
+            <select id="genOperatorSelect"><option value="">— 请选择算子 —</option></select>
+          </div>
+          <div>
+            <label>数量</label>
+            <input id="genCount" type="number" min="1" max="200" value="10">
+          </div>
+          <div>
+            <label>种子 (可选)</label>
+            <input id="genSeed" type="number" placeholder="留空则随机">
+          </div>
+          <div>
+            <button id="genBtn" onclick="generateCases()">生成</button>
+          </div>
+        </div>
+        <div class="status" id="genStatus"></div>
+      </div>
+
+      <!-- Existing cases list -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:600;color:#374151">已有用例</div>
+        <select id="caseOpFilter" onchange="loadExistingCases()" style="padding:6px 12px;border:1px solid #ddd;border-radius:6px;font-size:.85rem;min-width:200px">
+          <option value="">— 选择算子查看 —</option>
+        </select>
+      </div>
+      <div id="caseTableWrap" style="flex:1;min-height:0;overflow-y:auto">
+        <div id="caseContent"></div>
+        <div class="status" id="caseStatus"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Description Modal -->
   <div id="descModalOverlay" class="modal-overlay" onclick="closeDescModalOutside(event)">
     <div class="modal-box">
@@ -471,6 +560,7 @@ function switchTab(name, el) {
   if (name === 'signatures') { loadSigOperators(); loadSignatures(); }
   if (name === 'dtypes') { loadDtypeOperators(); loadDtypeCombos(); }
   if (name === 'result') { loadResultOperators(); loadConstraintsResult(); }
+  if (name === 'cases') { loadAllCaseOperators(); }
 }
 
 /* ---------- Parse step helpers ---------- */
@@ -1586,6 +1676,233 @@ async function loadConstraintsResult() {
   } catch (err) {
     statusEl.textContent = '加载失败: ' + err.message;
   }
+}
+
+/* ---------- Test Cases Generator (GeneratorAgent) ---------- */
+
+async function loadAllCaseOperators() {
+  // Populate both the "generate" dropdown (all operators) and
+  // the "已有用例" filter (only operators with saved cases).
+  try {
+    // 1. All operators (for the generate dropdown)
+    const opsRes = await fetch('/api/v1/operators');
+    const opsData = await opsRes.json();
+    const genSelect = document.getElementById('genOperatorSelect');
+    const currentGen = genSelect.value;
+    genSelect.innerHTML = '<option value="">— 请选择算子 —</option>';
+    if (opsData.operators) {
+      opsData.operators
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(op => {
+          const opt = document.createElement('option');
+          opt.value = op.name;
+          opt.textContent = op.name + (op.latest_version ? ' (v' + op.latest_version + ')' : '');
+          genSelect.appendChild(opt);
+        });
+    }
+    genSelect.value = currentGen;
+  } catch (e) {
+    document.getElementById('genStatus').textContent = '加载算子列表失败: ' + e.message;
+  }
+
+  // 2. Operators that already have saved cases
+  await loadCaseOperatorsWithSaved();
+  // 3. Refresh the right-hand list if a filter is set
+  await loadExistingCases();
+}
+
+async function loadCaseOperatorsWithSaved() {
+  try {
+    const res = await fetch('/api/v1/cases');
+    const data = await res.json();
+    const filter = document.getElementById('caseOpFilter');
+    const current = filter.value;
+    filter.innerHTML = '<option value="">— 选择算子查看 —</option>';
+    const rows = data.operators || [];
+    rows.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.operator_name;
+      const stamp = r.last_created_at ? ' · ' + r.last_created_at : '';
+      opt.textContent = r.operator_name + ' (' + r.count + ' 条' + stamp + ')';
+      filter.appendChild(opt);
+    });
+    filter.value = current;
+  } catch (_) {
+    /* non-fatal */
+  }
+}
+
+async function generateCases() {
+  const opSel = document.getElementById('genOperatorSelect');
+  const countEl = document.getElementById('genCount');
+  const seedEl = document.getElementById('genSeed');
+  const btn = document.getElementById('genBtn');
+  const statusEl = document.getElementById('genStatus');
+
+  const operatorName = opSel.value.trim();
+  if (!operatorName) {
+    statusEl.innerHTML = '<span class="badge badge-err">请先选择算子</span>';
+    return;
+  }
+  const count = parseInt(countEl.value, 10) || 10;
+  const seedRaw = seedEl.value.trim();
+  const seed = seedRaw === '' ? null : parseInt(seedRaw, 10);
+
+  btn.disabled = true;
+  statusEl.innerHTML = '<span class="spinner"></span>正在为 ' + escapeHtml(operatorName) + ' 生成 ' + count + ' 个用例...';
+
+  try {
+    const body = { operator_name: operatorName, count: count };
+    if (seed !== null && !Number.isNaN(seed)) body.seed = seed;
+
+    const res = await fetch('/api/v1/cases/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      statusEl.innerHTML = '<span class="badge badge-err">ERROR</span> ' + escapeHtml(data.error || '生成失败');
+      return;
+    }
+    statusEl.innerHTML = '<span class="badge badge-ok">SUCCESS</span> 已生成 ' + data.cases_count +
+      ' 条用例 → <code style="font-size:.8rem">' + escapeHtml(data.output_path || '') + '</code>';
+
+    // Refresh the existing-cases filter and auto-select the just-generated operator.
+    await loadCaseOperatorsWithSaved();
+    document.getElementById('caseOpFilter').value = operatorName;
+    await loadExistingCases();
+  } catch (err) {
+    statusEl.innerHTML = '<span class="badge badge-err">ERROR</span> ' + escapeHtml(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function loadExistingCases() {
+  const filterEl = document.getElementById('caseOpFilter');
+  const statusEl = document.getElementById('caseStatus');
+  const contentEl = document.getElementById('caseContent');
+  const operatorName = filterEl.value;
+
+  if (!operatorName) {
+    contentEl.innerHTML = '<div class="empty-state">请选择算子以查看已保存的测试用例</div>';
+    statusEl.textContent = '';
+    return;
+  }
+
+  statusEl.innerHTML = '<span class="spinner"></span>加载中...';
+  contentEl.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/v1/cases/' + encodeURIComponent(operatorName));
+    const data = await res.json();
+    if (!data.found) {
+      contentEl.innerHTML = '<div class="empty-state">该算子暂无已保存的测试用例 — 请使用上方"生成新用例"功能</div>';
+      statusEl.textContent = '';
+      return;
+    }
+    const cases = data.cases || [];
+    contentEl.innerHTML = renderCaseList(cases, operatorName);
+    statusEl.textContent = '共 ' + cases.length + ' 条用例';
+  } catch (err) {
+    contentEl.innerHTML = '<div class="empty-state">加载失败: ' + escapeHtml(err.message) + '</div>';
+    statusEl.textContent = '';
+  }
+}
+
+function renderCaseList(cases, operatorName) {
+  if (!cases || cases.length === 0) {
+    return '<div class="empty-state">该算子暂无用例</div>';
+  }
+
+  // Header with download link
+  const downloadUrl = '/api/v1/cases/' + encodeURIComponent(operatorName) + '/download';
+  let html = '';
+  html += '<div class="case-actions">' +
+    '<a class="btn-link" href="' + downloadUrl + '" target="_blank">下载 ' + escapeHtml(operatorName) + '_cases.json</a>' +
+    '<span style="font-size:.8rem;color:#6b7280;align-self:center">文件路径: <code style="font-size:.75rem">cases/' + escapeHtml(operatorName) + '_cases.json</code></span>' +
+    '</div>';
+  html += '<div class="case-list">';
+  cases.forEach((c, idx) => {
+    html += renderCaseCard(c, idx);
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderCaseCard(c, idx) {
+  const inputs = c.inputs || [];
+  const required = inputs.filter(i => i.required).length;
+  const optional = inputs.length - required;
+  const tensors = inputs.filter(i => i.type === 'tensor').length;
+  const attrs = inputs.length - tensors;
+
+  const summary = '<div class="case-summary">' +
+    '<span class="pill pill-tensor">tensor: ' + tensors + '</span>' +
+    (attrs ? '<span class="pill pill-attrs">attrs: ' + attrs + '</span>' : '') +
+    '<span class="pill pill-required">必选: ' + required + '</span>' +
+    (optional ? '<span class="pill pill-optional">可选: ' + optional + '</span>' : '') +
+    '</div>';
+
+  // Build inputs table
+  let inputsTable = '';
+  if (inputs.length > 0) {
+    inputsTable = '<table class="case-inputs-table"><thead><tr>' +
+      '<th>name</th><th>type</th><th>dtype</th><th>shape</th><th>range_values</th><th>required</th></tr>' +
+      '</thead><tbody>';
+    inputs.forEach(inp => {
+      const shapeStr = inp.shape ? '[' + inp.shape.join(', ') + ']' : '-';
+      const rv = inp.range_values;
+      const rvStr = Array.isArray(rv) ? '[' + rv.map(v => typeof v === 'number' ? v.toFixed(3) : v).join(', ') + ']' :
+                    (rv === null || rv === undefined ? '-' : String(rv));
+      inputsTable += '<tr>' +
+        '<td><strong>' + escapeHtml(inp.name) + '</strong></td>' +
+        '<td>' + escapeHtml(inp.type) + '</td>' +
+        '<td>' + escapeHtml(inp.dtype) + '</td>' +
+        '<td>' + escapeHtml(shapeStr) + '</td>' +
+        '<td>' + escapeHtml(rvStr) + '</td>' +
+        '<td>' + (inp.required ? '✓' : '—') + '</td>' +
+        '</tr>';
+    });
+    inputsTable += '</tbody></table>';
+  } else {
+    inputsTable = '<div style="color:#999;font-size:.85rem;padding:8px">无 inputs</div>';
+  }
+
+  // Meta grid
+  const meta = '<div class="case-meta-grid">' +
+    '<div class="meta-item">name<strong>' + escapeHtml(c.name || '') + '</strong></div>' +
+    '<div class="meta-item">aclnn_name<strong>' + escapeHtml(c.aclnn_name || '') + '</strong></div>' +
+    '<div class="meta-item">api_type<strong>' + escapeHtml(c.api_type || '') + '</strong></div>' +
+    '<div class="meta-item">version<strong>' + escapeHtml(c.version || '') + '</strong></div>' +
+    '<div class="meta-item">api<strong>' + escapeHtml(c.api || '') + '</strong></div>' +
+    '<div class="meta-item">backward<strong>' + (c.backward ? 'true' : 'false') + '</strong></div>' +
+    '</div>';
+
+  const raw = '<pre class="case-raw">' + escapeHtml(JSON.stringify(c, null, 2)) + '</pre>';
+
+  return '<div class="case-card" id="case-card-' + idx + '">' +
+    '<div class="case-card-head" onclick="toggleCaseCard(' + idx + ')">' +
+    '<span class="case-id">id=' + (c.id != null ? c.id : idx) + '</span>' +
+    '<span class="case-name">' + escapeHtml(c.name || 'unnamed') + ' · ' + inputs.length + ' inputs</span>' +
+    summary +
+    '<span class="case-arrow">▶</span>' +
+    '</div>' +
+    '<div class="case-card-body">' +
+    meta +
+    '<div style="font-size:.85rem;font-weight:600;color:#4b5563;margin:10px 0 6px">Inputs</div>' +
+    inputsTable +
+    '<div style="font-size:.85rem;font-weight:600;color:#4b5563;margin:14px 0 4px">Raw JSON</div>' +
+    raw +
+    '</div>' +
+    '</div>';
+}
+
+function toggleCaseCard(idx) {
+  const card = document.getElementById('case-card-' + idx);
+  if (card) card.classList.toggle('open');
 }
 
 </script>

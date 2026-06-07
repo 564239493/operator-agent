@@ -8,7 +8,9 @@ InitDoc → [ProductSupport ∥ ParseParams ∥ FunctionSignatureExtract
           ∥ ParamAttrExtract ∥ ArrayLengthExtract ∥ AllowedRangeExtract
           ∥ ParamRelationExtract ∥ ReturnCodeExtract ∥ DeterminismExtract
           ∥ DtypeComboExtract]
-       → BuildParamRelations → BuildParamConstraint → AssembleResult → END
+       → BuildParamRelations → BuildParamConstraint → AssembleResult
+       → CaseSubGraph (5-step: match_model → load_defs → init_static
+                       → solve_constraints → generate) → END
 """
 
 import logging
@@ -27,6 +29,13 @@ from agent.nodes.dtype_combo_extract import dtype_combo_extract_node as _dtype_c
 from agent.nodes.dtype_extract import dtype_extract_node as _dtype_extract
 from agent.nodes.function_explanation_extract import (
     function_explanation_extract_node as _function_explanation_extract,
+)
+from agent.nodes.case_subgraph import (
+    case_generate_node as _case_generate,
+    case_init_static_node as _case_init_static,
+    case_match_model_node as _case_match_model,
+    case_solve_constraints_node as _case_solve_constraints,
+    create_case_subgraph,
 )
 from agent.nodes.function_signature_extract import function_signature_extract_node as _function_signature_extract
 from agent.nodes.init_doc import init_doc_node as _init_doc
@@ -95,6 +104,11 @@ def create_pipeline_graph() -> CompiledStateGraph:
     graph.add_node("build_param_relations", traced_node("build_param_relations")(_build_param_relations))
     graph.add_node("build_param_constraint", traced_node("build_param_constraint")(_build_param_constraint))
     graph.add_node("assemble_result", traced_node("assemble_result")(_assemble_result))
+    # ── GeneratorAgent: 4-step case sub-graph (case_*_node) ──
+    graph.add_node("case_match_model", traced_node("case_match_model")(_case_match_model))
+    graph.add_node("case_init_static", traced_node("case_init_static")(_case_init_static))
+    graph.add_node("case_solve_constraints", traced_node("case_solve_constraints")(_case_solve_constraints))
+    graph.add_node("case_generate", traced_node("case_generate")(_case_generate))
 
     param_relation_subgraph = create_param_relation_subgraph()
     graph.add_node("param_relation_extract", param_relation_subgraph)
@@ -130,7 +144,11 @@ def create_pipeline_graph() -> CompiledStateGraph:
     graph.add_edge("param_relation_extract", "build_param_relations")
     graph.add_edge("build_param_relations", "build_param_constraint")
     graph.add_edge("build_param_constraint", "assemble_result")
-    graph.add_edge("assemble_result", END)
+    graph.add_edge("assemble_result", "case_match_model")
+    graph.add_edge("case_match_model", "case_init_static")
+    graph.add_edge("case_init_static", "case_solve_constraints")
+    graph.add_edge("case_solve_constraints", "case_generate")
+    graph.add_edge("case_generate", END)
     return graph.compile(name="operator-pipeline")
 
 
@@ -146,7 +164,9 @@ def create_pipeline_graph_after_init() -> CompiledStateGraph:
                           ∥ array_length_extract ∥ allowed_range_extract
                           ∥ return_code_extract ∥ determinism_extract
                           ∥ dtype_combo_extract ∥ param_relation_extract]
-    → build_param_relations → build_param_constraint → assemble_result → END
+    → build_param_relations → build_param_constraint → assemble_result
+    → case_match_model → case_load_defs → case_init_static
+    → case_solve_constraints → case_generate → END
     """
     graph = StateGraph(PipelineState)
     graph.add_node("product_support", traced_node("product_support")(_product_support))
@@ -168,6 +188,11 @@ def create_pipeline_graph_after_init() -> CompiledStateGraph:
     graph.add_node("build_param_relations", traced_node("build_param_relations")(_build_param_relations))
     graph.add_node("build_param_constraint", traced_node("build_param_constraint")(_build_param_constraint))
     graph.add_node("assemble_result", traced_node("assemble_result")(_assemble_result))
+    # ── GeneratorAgent: 4-step case sub-graph (case_*_node) ──
+    graph.add_node("case_match_model", traced_node("case_match_model")(_case_match_model))
+    graph.add_node("case_init_static", traced_node("case_init_static")(_case_init_static))
+    graph.add_node("case_solve_constraints", traced_node("case_solve_constraints")(_case_solve_constraints))
+    graph.add_node("case_generate", traced_node("case_generate")(_case_generate))
 
     param_relation_subgraph = create_param_relation_subgraph()
     graph.add_node("param_relation_extract", param_relation_subgraph)
@@ -205,5 +230,9 @@ def create_pipeline_graph_after_init() -> CompiledStateGraph:
     graph.add_edge("param_relation_extract", "build_param_relations")
     graph.add_edge("build_param_relations", "build_param_constraint")
     graph.add_edge("build_param_constraint", "assemble_result")
-    graph.add_edge("assemble_result", END)
+    graph.add_edge("assemble_result", "case_match_model")
+    graph.add_edge("case_match_model", "case_init_static")
+    graph.add_edge("case_init_static", "case_solve_constraints")
+    graph.add_edge("case_solve_constraints", "case_generate")
+    graph.add_edge("case_generate", END)
     return graph.compile(name="operator-pipeline")

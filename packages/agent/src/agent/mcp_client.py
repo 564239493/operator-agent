@@ -366,3 +366,32 @@ class MCPClient:
         if operator_name is not None:
             args["operator_name"] = operator_name
         return await self._call_tool("query_constraints_result", args)
+
+    # ── GeneratorAgent wrappers ─────────────────────────────────────────────
+
+    async def save_test_cases(
+        self,
+        operator_name: str,
+        cases_json: str,
+        source: str = "generated",
+        output_dir: str | None = None,
+    ) -> dict:
+        """Persist generated test cases to DB and ``cases/{op}_cases.json`` on disk."""
+        args: dict[str, Any] = {
+            "operator_name": operator_name,
+            "cases_json": cases_json,
+            "source": source,
+        }
+        if output_dir is not None:
+            args["output_dir"] = output_dir
+        return await self._call_tool("save_test_cases", args)
+
+    async def get_test_cases(self, operator_name: str) -> dict | None:
+        """Return the most recent saved test cases for ``operator_name``."""
+        return await self._call_tool("get_test_cases", {
+            "operator_name": operator_name,
+        })
+
+    async def list_test_case_operators(self) -> list[dict]:
+        """List operator names that have saved test cases, with counts."""
+        return await self._call_tool("list_test_case_operators", {})

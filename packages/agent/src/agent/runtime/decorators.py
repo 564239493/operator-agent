@@ -38,6 +38,11 @@ _AGENT_MAP: dict[str, str] = {
     "build_param_relations": "constraint",
     "build_param_constraint": "constraint",
     "assemble_result": "constraint",
+    "generate_cases": "case",
+    "case_match_model": "case",
+    "case_init_static": "case",
+    "case_solve_constraints": "case",
+    "case_generate": "case",
 }
 
 
@@ -188,6 +193,11 @@ def _node_label(node_id: str) -> str:
         "build_param_relations": "参数关系构建",
         "build_param_constraint": "参数约束构建",
         "assemble_result": "约束结果组装",
+        "generate_cases": "测试用例生成",
+        "case_match_model": "匹配数据模型",
+        "case_init_static": "初始静态数据",
+        "case_solve_constraints": "约束求解",
+        "case_generate": "生成用例数据",
     }
     return labels.get(node_id, node_id)
 
@@ -239,6 +249,22 @@ def _node_done_msg(node_id: str, result: dict) -> str:
         return "参数约束构建完成"
     elif node_id == "assemble_result":
         return "约束结果组装完成"
+    elif node_id == "generate_cases":
+        cc = result.get("cases_count", 0)
+        return f"测试用例生成完成。{cc} 个用例"
+    elif node_id == "case_match_model":
+        return "数据模型匹配完成"
+    elif node_id == "case_init_static":
+        sh = result.get("sampled_shapes", 0)
+        dt = result.get("sampled_dtypes", 0)
+        return f"静态数据初始化完成。{sh} shape × {dt} dtype"
+    elif node_id == "case_solve_constraints":
+        vc = result.get("valid_combos", 0)
+        rc = result.get("rejected_combos", 0)
+        return f"约束求解完成。有效 {vc} / 拒绝 {rc}"
+    elif node_id == "case_generate":
+        cc = result.get("cases_count", 0)
+        return f"用例数据生成完成。{cc} 个用例"
     return f"{_node_label(node_id)} 完成"
 
 
@@ -274,6 +300,11 @@ def _node_progress_pct(node_id: str) -> int:
         "param_relation_extract": 95,
         "build_param_relations": 96,
         "build_param_constraint": 98,
-        "assemble_result": 100,
+        "assemble_result": 99,
+        "generate_cases": 100,
+        "case_match_model": 25,
+        "case_init_static": 55,
+        "case_solve_constraints": 80,
+        "case_generate": 100,
     }
     return pcts.get(node_id, 50)

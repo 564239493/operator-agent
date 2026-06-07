@@ -28,3 +28,17 @@ class PipelineState(TypedDict, total=False):
     cann_version: str | None
     function_explanation_summary: dict[str, Any]
     error: Annotated[str | None, merge_errors]
+    # ── GeneratorAgent output (set by case_subgraph nodes) ──
+    # Loaded by case_match_model
+    constraints_raw: dict[str, Any] | None
+    # Counters from case_init_static
+    sampled_shapes: int
+    sampled_dtypes: int
+    # Counter from case_solve_constraints
+    valid_combos: int
+    rejected_combos: int
+    # Final outputs from case_generate
+    cases: list[dict[str, Any]]
+    cases_path: str | None
+    cases_count: int | None
+    cases_seed: int | None

@@ -23,6 +23,15 @@ from mcp_server.tools.document_tools import (
     save_parsed_document,
     update_param_descriptions,
 )
+from mcp_server.tools.test_case_tools import (
+    do_get_test_cases as _do_get_test_cases,
+)
+from mcp_server.tools.test_case_tools import (
+    do_list_test_case_operators as _do_list_test_case_operators,
+)
+from mcp_server.tools.test_case_tools import (
+    do_save_test_cases as _do_save_test_cases,
+)
 from mcp_server.tools.document_tools import get_parsed_by_doc_id as _get_parsed_by_doc_id
 from mcp_server.tools.document_tools import (
     query_constraints_result as _query_constraints_result,
@@ -869,6 +878,57 @@ def get_function_explanation_summary(doc_id: int) -> str:
         JSON string with keys: description, formula, key_points, source_text.
     """
     result = _get_fn_expl_summary(doc_id)
+    return json.dumps(result, ensure_ascii=False)
+
+
+# ── GeneratorAgent MCP tools ─────────────────────────────────────────────────
+
+
+@mcp.tool()
+def save_test_cases(
+    operator_name: str,
+    cases_json: str,
+    source: str = "generated",
+    output_dir: str | None = None,
+) -> str:
+    """Persist generated test cases to DB and ``cases/{operator_name}_cases.json``.
+
+    Args:
+        operator_name: Operator name (e.g. ``aclnnAdaLayerNorm``).
+        cases_json: JSON-serialized list of test case records.
+        source: Provenance label (default ``"generated"``).
+        output_dir: Override for the cases directory.  ``None`` → ``cases/``
+            under the project root.
+
+    Returns:
+        JSON with ``operator_name``, ``saved_count``, and absolute ``output_path``.
+    """
+    result = _do_save_test_cases(operator_name, cases_json, source=source, output_dir=output_dir)
+    return json.dumps(result, ensure_ascii=False)
+
+
+@mcp.tool()
+def get_test_cases(operator_name: str) -> str:
+    """Return the most recent saved test cases for ``operator_name``.
+
+    Args:
+        operator_name: Operator name.
+
+    Returns:
+        JSON with ``operator_name`` and ``cases`` list, or ``"null"`` if none.
+    """
+    result = _do_get_test_cases(operator_name)
+    return json.dumps(result, ensure_ascii=False)
+
+
+@mcp.tool()
+def list_test_case_operators() -> str:
+    """List operator names that have saved test cases, with counts.
+
+    Returns:
+        JSON array of ``{operator_name, count, last_created_at}`` objects.
+    """
+    result = _do_list_test_case_operators()
     return json.dumps(result, ensure_ascii=False)
 
 

@@ -8,6 +8,8 @@ from fastapi.staticfiles import StaticFiles
 from agent.core.config import settings
 from agent.core.logging import setup_logging
 from agent.db import get_db
+from agent.routes.cases import router as cases_router
+from agent.routes.generator import router as generator_router
 from agent.routes.query import router as query_router
 from agent.routes.runs import router as runs_router
 from agent.routes.upload import router as upload_router
@@ -38,6 +40,8 @@ def create_app() -> FastAPI:
     app.include_router(upload_router)
     app.include_router(query_router)
     app.include_router(runs_router)
+    app.include_router(cases_router)
+    app.include_router(generator_router)
 
     @app.get("/health")
     async def health() -> dict:

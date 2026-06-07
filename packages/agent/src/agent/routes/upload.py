@@ -142,9 +142,14 @@ def _persist_to_db(run_id: str, run, result: dict, manager: RuntimeManager) -> N
     events_payload = []
     for evt in run.events:
         sse = evt.to_sse()
+        # Use the alias name (e.g. "node.started") to match what the SSE
+        # stream emits.  The frontend's _eventRouteMap dispatches on these
+        # alias names — if we stored the raw enum value ("node.start")
+        # instead, replays after a backend restart would silently fail to
+        # dispatch any events.
         events_payload.append({
             "seq": evt.seq,
-            "event_type": evt.event_type.value,
+            "event_type": sse["event_type"],
             "data": sse["data"],
         })
     try:
