@@ -49,6 +49,7 @@ async def function_signature_extract_node(state: PipelineState) -> dict[str, Any
             return {"error": None}
 
         signatures = await _extract_signatures_via_llm(content)
+        signatures = _normalize_param_types(signatures)
         if not signatures:
             logger.info("FunctionSignatureExtract: LLM returned no results for doc_id=%s", doc_id)
             return {"error": None}
@@ -89,6 +90,22 @@ async def _extract_signatures_via_llm(content: str) -> list[dict]:
     response = await llm.ainvoke(prompt)
     text = response.content if hasattr(response, "content") else str(response)
     return _parse_json_response(text)
+
+
+def _normalize_param_types(signatures: list[dict]) -> list[dict]:
+    """Strip const and pointer modifiers from parameters.type.
+
+    Ensures type field contains only the base type name (e.g. "aclTensor"),
+    not the full C declaration (e.g. "const aclTensor *").
+    """
+    for sig in signatures:
+        for param in sig.get("parameters", []):
+            ptype = param.get("type", "")
+            # Strip const, pointer *, and reference &
+            ptype = re.sub(r'\bconst\b', '', ptype)
+            ptype = ptype.replace('*', '').replace('&', '').strip()
+            param["type"] = ptype
+    return signatures
 
 
 def _parse_json_response(text: str) -> list[dict]:

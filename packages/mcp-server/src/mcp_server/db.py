@@ -433,6 +433,20 @@ class Database:
             self._conn.execute("ALTER TABLE parameters DROP COLUMN description")
         except sqlite3.OperationalError:
             pass
+        # 迁移：v33 — constraints_result 重命名 constraints_in_param 为 constraints_in_parameters
+        try:
+            columns = [
+                row[1] for row in self._conn.execute(
+                    "PRAGMA table_info(constraints_result)"
+                ).fetchall()
+            ]
+            if "constraints_in_param" in columns and "constraints_in_parameters" not in columns:
+                self._conn.execute(
+                    "ALTER TABLE constraints_result "
+                    "RENAME COLUMN constraints_in_param TO constraints_in_parameters"
+                )
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
 
     @property

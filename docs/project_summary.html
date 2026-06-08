@@ -209,7 +209,7 @@
 │   │   └── src/mcp_server/
 │   │       ├── __main__.py          # 入口：初始化 DB，调用 mcp.run()
 │   │       ├── db.py                # Database 类 + get_db() 单例，同步 SQLite + WAL
-│   │       ├── schema.sql           # 11 张表：operators, document_versions（含 json_constraints）, parameters（含 param_constraint JSON）, param_relations（含 relation_object JSON）, function_signatures, platform_support（含 deterministic_computing JSON）, return_codes, dtype_combinations, constraints_result（含 deterministic_computing/inputs/outputs/constraints_in_param/dtype_support_description）, tasks, task_items
+│   │       ├── schema.sql           # 11 张表：operators, document_versions（含 json_constraints）, parameters（含 param_constraint JSON）, param_relations（含 relation_object JSON）, function_signatures, platform_support（含 deterministic_computing JSON）, return_codes, dtype_combinations, constraints_result（含 deterministic_computing/inputs/outputs/constraints_in_parameters/dtype_support_description）, tasks, task_items
 │   │       ├── server.py            # FastMCP 实例，注册 55 个 tool + 2 个 resource
 │   │       ├── parsers/
 │   │       │   ├── section_splitter.py  # 基于 markdown-it-py token 的章节分割
@@ -288,7 +288,7 @@
 │
 ├── operators/                       # ~90+ 个 CANN 算子 Markdown 源文档
 │   ├── (root)/, cv/, math/, nn/, trans/
-├── tests/                           # 测试（mcp_server/parsers 34 个 + agent 173 个 = 207 总计）
+├── tests/                           # 测试（agent 283 个 + mcp_server 34 个 = 317 总计）
 ├── docs/                            # 文档 + LLM 提取提示指南 + 提取结果
 │   ├── project_summary.html         # 项目总览 (HTML)
 │   ├── prompts/                     # 7 个提取阶段的提示模板
@@ -297,6 +297,9 @@
 │   ├── constraints-demo/            # 34 个算子约束提取 JSON 示例
 │   ├── doc_cons_result.html         # document_versions.json_constraints 方案
 │   ├── op-task.html                 # 批量任务管理方案文档
+│   ├── da-schema.html               # dimensions & allowed_range_value 准确性保障方案
+│   ├── expr-schema.html             # 形式化表达式准确性保障方案
+│   ├── trans.html                   # NL 到形式化表达式转换风险分析
 │   └── result.json                  # 约束结果示例
 ├── data/operator_agent.db           # SQLite 数据库（运行时生成）
 ├── CLAUDE.md                        # 项目级 Claude Code 指引
@@ -1049,6 +1052,38 @@ flowchart TD
 
 <p><strong>触发条件</strong>：所有并行节点（5a~5k + param_relation）全部完成后执行。</p>
 <p><strong>特点</strong>：汇总上游所有参数属性（shape、dtype、dformat、optional、array_length、allowed_range 等），通过 LLM 二次处理（shape → dimensions 维度数组、allowed_range_value 非 Tensor 参数取值范围），按 <strong>(function_name, param_name) × platform</strong> 维度组装统一的 <code>param_constraint</code> JSON 对象，批量更新到 <code>parameters.param_constraint</code> 列。</p>
+<p><strong>确定性预处理 + 校验机制（2026-06-08 新增）</strong>：对 dimensions 和 allowed_range_value 实施两阶段保护：</p>
+<ol>
+<li><strong>Phase 1 - 确定性预处理</strong>：基于正则的零 LLM 成本解析
+  <ul>
+    <li><strong>dimensions</strong>：支持三种输出格式
+      <ul>
+        <li><strong>rank exact</strong>：<code>[N, N]</code> - 精确 N 维（如 "2D" → <code>[2, 2]</code>）</li>
+        <li><strong>rank range</strong>：<code>[min_rank, max_rank]</code> - 支持 min 到 max 维（如 "0-8" → <code>[0, 8]</code>，"1-8" → <code>[1, 8]</code>）</li>
+        <li><strong>逐维范围</strong>：<code>[[min,max], ...]</code> - 每维的 size 范围（如 "[2, 3, 4]" → <code>[[2,2],[3,3],[4,4]]</code>）</li>
+      </ul>
+    </li>
+    <li><strong>allowed_range_value</strong>：常见模式直接提取
+      <ul>
+        <li>范围：<code>"0-100"</code> / <code>"[1, 8]"</code> → <code>[[0, 100]]</code> / <code>[[1, 8]]</code></li>
+        <li>枚举：<code>"枚举值: 1, 2, 3"</code> → <code>[[1,1], [2,2], [3,3]]</code></li>
+        <li>bool 类型短路：<code>[True, False]</code></li>
+      </ul>
+    </li>
+  </ul>
+</li>
+<li><strong>Phase 2 - LLM 解析 + 校验 + 重试</strong>
+  <ul>
+    <li>确定性预处理未匹配的 shape 进入 LLM 批量解析（<code>SHAPE_TO_DIMENSIONS_PROMPT</code>）</li>
+    <li>确定性预处理未匹配的 allowed_range_value 进入 LLM 逐参数提取（<code>ALLOWED_RANGE_VALUE_BUILD_PROMPT</code>）</li>
+    <li><strong>结构校验</strong>：dimensions 校验 rank format（0 ≤ min_rank ≤ max_rank ≤ 10）和逐维范围（min ≤ max）；allowed_range_value 校验 min ≤ max + 类型匹配 + 合理性（不超过 10^9）</li>
+    <li><strong>对齐校验</strong>（dimensions 专用）：LLM 返回数组长度必须与输入 shape 数量一致</li>
+    <li><strong>溯源校验</strong>（allowed_range_value 专用，软校验）：检查提取值是否在源文本中出现</li>
+    <li><strong>失败补救</strong>：校验失败时最多重试 2 次，仍失败则降级为单条目 LLM 调用（dimensions）或返回空数组（allowed_range_value）</li>
+  </ul>
+</li>
+</ol>
+<p>详细方案参见 <a href="da-schema.html">docs/da-schema.html</a>。</p>
 <p><strong>流程</strong>：</p>
 <div class="flow-chart">build_param_constraint_node(state)
   │
@@ -1064,13 +1099,31 @@ flowchart TD
   │    ├─ dtype_by_platform: platform → param_name → dtype set
   │    └─ supported_platforms: 已支持平台名称列表
   │
-  ├─ Step 3: LLM 批量解析 shape → dimensions
-  │    └─ SHAPE_TO_DIMENSIONS_PROMPT.format(shapes=...)
-  │       └─ 返回 [[dim1, dim2, ...], ...] 维度数组
+  ├─ Step 3: dimensions 解析（确定性预处理 + LLM + 校验）
+  │    ├─ Phase 1: 确定性预处理（正则，零 LLM 成本）
+  │    │    └─ "2D" → [2, 2], "0-8" → [0, 8], "(N,C,H,W)" → [4, 4]
+  │    │    └─ 覆盖率约 70-80%
+  │    ├─ Phase 2: LLM 批量解析（未匹配的 shape）
+  │    │    └─ SHAPE_TO_DIMENSIONS_PROMPT.format(shapes=...)
+  │    │    └─ 支持三种格式：rank exact [N,N], rank range [min,max], 逐维 [[min,max],...]
+  │    ├─ Phase 3: 校验
+  │    │    ├─ 结构校验：rank format (0 ≤ min ≤ max ≤ 10), 逐维范围 (min ≤ max)
+  │    │    └─ 对齐校验：LLM 返回数组长度 == 输入 shape 数量
+  │    └─ Phase 4: 失败补救
+  │         └─ 校验失败 → 最多重试 2 次 → 仍失败 → 降级为单条目 LLM 调用
   │
-  ├─ Step 4: LLM 批量提取 allowed_range_value（仅非 Tensor 参数）
-  │    └─ ALLOWED_RANGE_VALUE_BUILD_PROMPT.format(param_name, param_type, context_text)
-  │       └─ 返回 [[min, max], ...] 取值范围数组
+  ├─ Step 4: allowed_range_value 解析（确定性预处理 + LLM + 校验 + 重试）
+  │    ├─ bool 类型短路：[True, False]
+  │    ├─ Phase 1: 确定性预处理（正则，零 LLM 成本）
+  │    │    └─ "0-100" → [[0, 100]], "枚举值: 1, 2, 3" → [[1,1], [2,2], [3,3]]
+  │    │    └─ 覆盖率约 40-50%
+  │    ├─ Phase 2: LLM 逐参数提取（未匹配的参数）
+  │    │    └─ ALLOWED_RANGE_VALUE_BUILD_PROMPT.format(param_name, param_type, context_text)
+  │    │    └─ 最多重试 2 次
+  │    ├─ Phase 3: 校验
+  │    │    ├─ 结构校验：min ≤ max + 类型匹配 + 合理性（不超过 10^9）
+  │    │    └─ 溯源校验（软校验）：检查提取值是否在源文本中出现
+  │    └─ 仍失败 → 返回空数组
   │
   ├─ Step 5: 组装 param_constraint JSON
   │    └─ 每个 (function_name, param_name) × platform:
@@ -1094,14 +1147,14 @@ flowchart TD
 <div class="io-row"><span class="io-label">State 输入</span><span class="io-val"><code>doc_id</code>, <code>operator_name</code></span></div>
 <div class="io-row"><span class="io-label">MCP 读取</span><span class="io-val"><code>get_parsed_by_doc_id</code>, <code>query_params_by_doc_id</code>, <code>query_param_relations</code>, <code>query_function_signatures_by_doc_id</code>, <code>query_platform_support_by_doc_id</code>, <code>query_return_codes_by_doc_id</code>, <code>query_dtype_combos_by_doc_id</code>, <code>get_function_explanation_summary</code></span></div>
 <div class="io-row"><span class="io-label">State 输出</span><span class="io-val"><code>error</code></span></div>
-<div class="io-row"><span class="io-label">DB 写入</span><span class="io-val"><code>constraints_result</code> (INSERT OR REPLACE: operator_name, product_support JSON, function_explanation JSON, function_signature, return_codes, deterministic_computing, inputs, outputs, constraints_in_param, dtype_support_description)<br><code>document_versions.json_constraints</code> (UPDATE: 完整 result.json 结构)</span></div>
+<div class="io-row"><span class="io-label">DB 写入</span><span class="io-val"><code>constraints_result</code> (INSERT OR REPLACE: operator_name, product_support JSON, function_explanation JSON, function_signature, return_codes, deterministic_computing, inputs, outputs, constraints_in_parameters, dtype_support_description)<br><code>document_versions.json_constraints</code> (UPDATE: 完整 result.json 结构)</span></div>
 <div class="io-row"><span class="io-label">特殊说明</span><span class="io-val"><strong>无 LLM 调用</strong>，纯 DB 查询 + JSON 拼接。product_support 取自 platform_support 表（is_supported=1 的平台名列表），不再从 parsed_data 获取</span></div>
 </div>
 
 <p><strong>触发条件</strong>：build_param_constraint 节点完成后执行。</p>
 <p><strong>特点</strong>：汇编节点，从 8 张表 + document_versions.function_explanation_summary 中查询当前文档的所有提取结果，完成两项持久化：</p>
 <ol>
-  <li>写入 <code>constraints_result</code> 表（11 个字段，含 5 个新增字段：deterministic_computing、inputs、outputs、constraints_in_param、dtype_support_description）</li>
+  <li>写入 <code>constraints_result</code> 表（11 个字段，含 5 个新增字段：deterministic_computing、inputs、outputs、constraints_in_parameters、dtype_support_description）</li>
   <li>组装完整 result.json 结构并写入 <code>document_versions.json_constraints</code></li>
 </ol>
 <p><strong>product_support 取值变更</strong>：原来从 <code>parsed_data</code> 获取（常为空），现改为从 <code>platform_support</code> 表查询 <code>is_supported=1</code> 的平台名列表，数据质量更可靠。</p>
@@ -1132,24 +1185,24 @@ flowchart TD
   ├─ Step 3e: 组装新字段
   │    ├─ _build_deterministic_computing(platform_support_data) → {platform: {value, src_text}}
   │    ├─ _build_inputs_outputs(params) → inputs/outputs 各为 {param_name: param_constraint}
-  │    ├─ _build_constraints_in_param(relations, product_support_list) → {platform: [relation_object]}
+  │    ├─ _build_constraints_in_parameters(relations, product_support_list) → {platform: [relation_object]}
   │    └─ _build_dtype_support(dtype_combos) → {platform: [combo]}
   │
   ├─ Step 4: MCP: save_constraints_result(doc_id, operator_name,
   │         product_support, function_explanation, function_signature,
   │         return_codes, deterministic_computing, inputs, outputs,
-  │         constraints_in_param, dtype_support_description)
+  │         constraints_in_parameters, dtype_support_description)
   │    └─ INSERT OR REPLACE constraints_result 表
   │
   ├─ Step 5: 组装 result.json 结构
   │    └─ {operator_name, function_explanation: description, product_support,
   │        function_signature, deterministic_computing, inputs, outputs,
-  │        constraints_in_param, return_info, dtype_support_description}
+  │        constraints_in_parameters, return_info, dtype_support_description}
   │
   └─ Step 6: MCP: save_json_constraints(doc_id, json_constraints)
        └─ UPDATE document_versions.json_constraints</div>
 <p><strong>输出状态</strong>：<code>error</code></p>
-<p><strong>constraints_result 存储格式</strong>：每行对应一个文档版本。<code>function_explanation</code> 是 JSON 对象（顶层含 description，以 function_name 为 key）。<code>product_support</code> 为支持的平台名称列表。<code>deterministic_computing</code> 为 {platform: {value: "true"/"false", src_text}}。<code>inputs</code>/<code>outputs</code> 为 {param_name: param_constraint}。<code>constraints_in_param</code> 为 {platform: [relation_object]}。<code>dtype_support_description</code> 为 {platform: [combo]}。</p>
+<p><strong>constraints_result 存储格式</strong>：每行对应一个文档版本。<code>function_explanation</code> 是 JSON 对象（顶层含 description，以 function_name 为 key）。<code>product_support</code> 为支持的平台名称列表。<code>deterministic_computing</code> 为 {platform: {value: "true"/"false", src_text}}。<code>inputs</code>/<code>outputs</code> 为 {param_name: param_constraint}。<code>constraints_in_parameters</code> 为 {platform: [relation_object]}。<code>dtype_support_description</code> 为 {platform: [combo]}。</p>
 <p><strong>json_constraints 存储格式</strong>：完整的 result.json 结构（10 个一级字段），存储在 <code>document_versions.json_constraints</code> 列中。</p>
 
 
@@ -1331,7 +1384,7 @@ constraints_result (
     deterministic_computing    TEXT NOT NULL DEFAULT '{}',       -- JSON: {platform: {value: "true"/"false", src_text}} (v22迁移添加)
     inputs                     TEXT NOT NULL DEFAULT '{}',       -- JSON: {param_name: {platform: constraint}} (v23迁移添加)
     outputs                    TEXT NOT NULL DEFAULT '{}',       -- JSON: {param_name: {platform: constraint}} (v24迁移添加)
-    constraints_in_param       TEXT NOT NULL DEFAULT '{}',       -- JSON: {platform: [relation_object]} (v25迁移添加)
+    constraints_in_parameters  TEXT NOT NULL DEFAULT '{}',       -- JSON: {platform: [relation_object]} (v25迁移添加, v33重命名)
     dtype_support_description  TEXT NOT NULL DEFAULT '{}',       -- JSON: {platform: [combo]} (v26迁移添加)
     created_at                 TEXT
 )
@@ -1506,6 +1559,9 @@ task_items (
 <tr><td>提取完整性建议</td><td><code>docs/suggest.html</code></td><td>src_content 覆盖度 + param_relation 完整性优化建议</td></tr>
 <tr><td>llm_description 子图方案</td><td><code>docs/llm_description-schema.html</code></td><td>路径 A 优化方案：子图重构 + 预过滤 + 属性检查清单</td></tr>
 <tr><td>param_relation Agent 方案</td><td><code>docs/param_relation-schema.html</code></td><td>路径 B 优化方案：Agent 迭代提取循环（分块 + 覆盖检查 + 针对性提取 + 自反思）<strong>已实施</strong></td></tr>
+<tr><td>dimensions &amp; range 准确性保障</td><td><code>docs/da-schema.html</code></td><td>dimensions 和 allowed_range_value 提取准确性保障方案（确定性预处理 + 校验 + 重试）<strong>已实施</strong></td></tr>
+<tr><td>形式化表达式准确性保障</td><td><code>docs/expr-schema.html</code></td><td>param_relations.expr 形式化表达式生成准确性保障方案（AST 校验 + 引用校验 + 语义校验）<strong>已实施</strong></td></tr>
+<tr><td>表达式转换风险分析</td><td><code>docs/trans.html</code></td><td>NL 到形式化表达式转换的潜在风险分析与优化建议</td></tr>
 </tbody>
 </table>
 </section>

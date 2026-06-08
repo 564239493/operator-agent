@@ -13,6 +13,7 @@ from agent.nodes.llm_description_extract.extract_ws import (
 from agent.nodes.llm_description_extract.save_descriptions import (
     _build_enriched_params,
 )
+from agent.prompts import LLM_DESCRIPTION_EXTRACT_PROMPT
 
 
 class TestIsWsFunction:
@@ -133,3 +134,26 @@ class TestBuildEnrichedParams:
         assert len(result) == 2
         assert result[0]["llm_description"] == "desc x"
         assert "llm_description" not in result[1]
+
+
+class TestPromptExcludesCrossParamRelations:
+    """Verify prompt rule 7 excludes cross-parameter relationship constraints."""
+
+    def test_prompt_contains_rule_7(self):
+        assert "不要包含**与其他参数之间的关系约束" in LLM_DESCRIPTION_EXTRACT_PROMPT
+
+    def test_prompt_examples_include_dtype_relation(self):
+        assert "与参数X的数据类型一致" in LLM_DESCRIPTION_EXTRACT_PROMPT
+
+    def test_prompt_examples_include_shape_relation(self):
+        assert "shape的第N维与参数Y相同" in LLM_DESCRIPTION_EXTRACT_PROMPT
+
+    def test_prompt_examples_include_value_dependency(self):
+        assert "取值依赖参数Z" in LLM_DESCRIPTION_EXTRACT_PROMPT
+
+    def test_prompt_examples_include_input_dtype(self):
+        assert "必须与input的dtype保持一致" in LLM_DESCRIPTION_EXTRACT_PROMPT
+
+    def test_prompt_mentions_other_modules(self):
+        assert "这类跨参数关系由其他模块专门处理" in LLM_DESCRIPTION_EXTRACT_PROMPT
+

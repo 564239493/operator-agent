@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from agent.nodes.function_signature_extract import _parse_json_response
+from agent.nodes.function_signature_extract import (
+    _normalize_param_types,
+    _parse_json_response,
+)
 
 
 class TestParseJsonResponse:
@@ -51,3 +54,54 @@ class TestParseJsonResponse:
         assert result[1]["function_name"] == "bar"
         assert len(result[0]["parameters"]) == 1
         assert result[0]["parameters"][0]["name"] == "x"
+
+
+class TestNormalizeParamTypes:
+    def test_strips_const_modifier(self):
+        sigs = [{"parameters": [{"name": "self", "type": "const aclTensor"}]}]
+        result = _normalize_param_types(sigs)
+        assert result[0]["parameters"][0]["type"] == "aclTensor"
+
+    def test_strips_pointer_asterisk(self):
+        sigs = [{"parameters": [{"name": "x", "type": "aclTensor*"}]}]
+        result = _normalize_param_types(sigs)
+        assert result[0]["parameters"][0]["type"] == "aclTensor"
+
+    def test_strips_const_and_pointer(self):
+        sigs = [{"parameters": [{"name": "self", "type": "const aclTensor *"}]}]
+        result = _normalize_param_types(sigs)
+        assert result[0]["parameters"][0]["type"] == "aclTensor"
+
+    def test_strips_reference_operator(self):
+        sigs = [{"parameters": [{"name": "x", "type": "int&"}]}]
+        result = _normalize_param_types(sigs)
+        assert result[0]["parameters"][0]["type"] == "int"
+
+    def test_preserves_clean_type(self):
+        sigs = [{"parameters": [{"name": "x", "type": "uint64_t"}]}]
+        result = _normalize_param_types(sigs)
+        assert result[0]["parameters"][0]["type"] == "uint64_t"
+
+    def test_handles_empty_parameters(self):
+        sigs = [{"parameters": []}]
+        result = _normalize_param_types(sigs)
+        assert result[0]["parameters"] == []
+
+    def test_handles_missing_parameters_key(self):
+        sigs = [{"function_name": "foo"}]
+        result = _normalize_param_types(sigs)
+        assert result == [{"function_name": "foo"}]
+
+    def test_multiple_params_mixed(self):
+        sigs = [{
+            "parameters": [
+                {"name": "self", "type": "const aclTensor *"},
+                {"name": "stream", "type": "const aclrtStream"},
+                {"name": "workspaceSize", "type": "uint64_t"},
+            ]
+        }]
+        result = _normalize_param_types(sigs)
+        params = result[0]["parameters"]
+        assert params[0]["type"] == "aclTensor"
+        assert params[1]["type"] == "aclrtStream"
+        assert params[2]["type"] == "uint64_t"

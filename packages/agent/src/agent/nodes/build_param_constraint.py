@@ -1,4 +1,10 @@
-"""BuildParamConstraint node: assemble structured param_constraint JSON for each parameter."""
+"""BuildParamConstraint node: assemble structured param_constraint JSON for each parameter.
+
+Implements deterministic preprocessing + validation for dimensions and allowed_range_value:
+- Phase 1: Deterministic preprocessing (regex-based, zero LLM cost)
+- Phase 1: Structural validation (dual format for dimensions, min/max/alignment for ranges)
+- Phase 2: Failure remediation (per-item retry on alignment failure, retry on validation failure)
+"""
 
 from __future__ import annotations
 
@@ -22,6 +28,7 @@ _mcp_client = MCPClient()
 _JSON_BLOCK_RE = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.IGNORECASE)
 
 _CONCURRENCY_LIMIT = 5
+_MAX_DIMENSIONS_RETRIES = 2
 
 
 async def build_param_constraint_node(state: PipelineState) -> dict[str, Any]:
@@ -105,6 +112,8 @@ async def build_param_constraint_node(state: PipelineState) -> dict[str, Any]:
 
             for plat in supported_platforms:
                 ptype = sig_type_map.get((fn_name, pname), param.get("param_type", ""))
+                # Strip const and pointer modifiers (defensive normalization)
+                ptype = _normalize_type(ptype)
 
                 # dtype: platform-specific → "通用" → dtype_desc fallback
                 dtypes = sorted(
@@ -187,8 +196,262 @@ def _is_bool_type(param_type: str) -> bool:
     return param_type.lower() == "bool"
 
 
-async def _batch_parse_dimensions(params: list[dict]) -> dict[tuple[str, str], list]:
-    """Collect all shape values and parse via LLM in one batch call.
+def _normalize_type(ptype: str) -> str:
+    """Strip const, pointer *, and reference & from C type names.
+
+    Defensive normalization ensuring param_constraint.type.value contains
+    only the base type name (e.g. "aclTensor" not "const aclTensor *").
+    """
+    ptype = re.sub(r'\bconst\b', '', ptype)
+    ptype = ptype.replace('*', '').replace('&', '').strip()
+    return ptype
+
+
+# ---------------------------------------------------------------------------
+# Phase 1: Deterministic preprocessing for dimensions (zero LLM cost)
+# ---------------------------------------------------------------------------
+
+# Pattern: (regex, result_or_lambda)
+# Result format:
+#   [min_rank, max_rank] for rank/rank-range (e.g. [5,5] exact, [0,8] range)
+#   [[min,max], ...] for per-dimension size ranges
+_DIMENSION_PATTERNS: list[tuple[str, Any]] = [
+    # "标量" / "0-D" / "0D" → [] (scalar has no dimensions)
+    (r"^(标量|0[- ]?D|0D)$", []),
+    # "X-Y" / "X~Y" rank range (e.g. "0-8" → [0, 8], "1-8" → [1, 8])
+    # Must come before N-D to avoid "1-8" being partially consumed
+    (
+        r"^(\d+)\s*[-~]\s*(\d+)$",
+        lambda m: [int(m.group(1)), int(m.group(2))],
+    ),
+    # "1-D" / "1D" → [1, 1] (rank format)
+    (r"^1[- ]?D$", [1, 1]),
+    # "ND" / "N-D" → [N, N] (rank format)
+    (r"^(\d+)[- ]?D$", lambda m: [int(m.group(1)), int(m.group(1))]),
+    # "(N,C,H,W)" → count dimensions → [4, 4] (rank format)
+    (r"^\(([^)]+)\)$", lambda m: [len(m.group(1).split(","))] * 2),
+    # "[2, 3, 4]" → fixed dimensions → [[2,2],[3,3],[4,4]] (per-dimension format)
+    (
+        r"^\[([^\]]+)\]$",
+        lambda m: [
+            [int(v.strip()), int(v.strip())]
+            for v in m.group(1).split(",")
+            if v.strip().isdigit()
+        ],
+    ),
+    # "与输入相同" / "same as input" → [] (cannot determine)
+    (r"^(与输入相同|同输入|same as input)$", []),
+]
+
+
+def _try_deterministic_parse(shape: str) -> list | None:
+    """Try deterministic parsing of shape string.
+
+    Returns parsed result if pattern matches, None otherwise.
+    """
+    shape_stripped = shape.strip()
+    for pattern, result in _DIMENSION_PATTERNS:
+        m = re.match(pattern, shape_stripped, re.IGNORECASE)
+        if m:
+            if callable(result):
+                return result(m)
+            return result
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Phase 1: Validation functions for dimensions
+# ---------------------------------------------------------------------------
+
+
+def _is_rank_format(dims: list) -> bool:
+    """Check if dimensions is rank format [count, count]."""
+    return (
+        isinstance(dims, list)
+        and len(dims) == 2
+        and all(isinstance(d, int) for d in dims)
+    )
+
+
+def _validate_dimensions_structure(dims: list) -> tuple[bool, str]:
+    """Validate structure of dimensions array (supports three formats).
+
+    Format 1 (rank): [min_rank, max_rank] where 0 <= min_rank <= max_rank <= 10
+    Format 2 (per-dimension): [[min, max], ...] where min <= max or null
+    """
+    if not isinstance(dims, list):
+        return False, "dimensions must be a list"
+
+    if not dims:  # Empty array is valid (scalar or undetermined)
+        return True, ""
+
+    # Format 1: Rank format [min_rank, max_rank]
+    if _is_rank_format(dims):
+        min_rank, max_rank = dims[0], dims[1]
+        if min_rank < 0:
+            return False, f"rank min must be >= 0, got {min_rank}"
+        if min_rank > max_rank:
+            return False, f"rank [min, max] requires min <= max, got {dims}"
+        if max_rank > 10:
+            return False, f"Too many dimensions: {max_rank}"
+        return True, ""
+
+    # Format 2: Per-dimension ranges [[min, max], ...]
+    for i, dim in enumerate(dims):
+        if not isinstance(dim, list) or len(dim) != 2:
+            return False, f"dim[{i}] must be [min, max], got {dim}"
+
+        min_val, max_val = dim
+        if min_val is not None and max_val is not None:
+            if not isinstance(min_val, (int, float)) or not isinstance(max_val, (int, float)):
+                return False, f"dim[{i}] values must be int/float or null, got [{type(min_val).__name__}, {type(max_val).__name__}]"
+            if min_val > max_val:
+                return False, f"dim[{i}]: min ({min_val}) > max ({max_val})"
+
+    if len(dims) > 10:
+        return False, f"Too many dimensions: {len(dims)}"
+
+    return True, ""
+
+
+def _validate_dimensions_alignment(
+    input_count: int,
+    parsed: list,
+) -> tuple[bool, str]:
+    """Validate that parsed array length matches input count."""
+    if len(parsed) != input_count:
+        return False, f"Alignment mismatch: expected {input_count} entries, got {len(parsed)}"
+    return True, ""
+
+
+# ---------------------------------------------------------------------------
+# Phase 1: Deterministic preprocessing for allowed_range_value
+# ---------------------------------------------------------------------------
+
+# Pattern: (regex, result_or_lambda)
+_RANGE_PATTERNS: list[tuple[str, Any]] = [
+    # "枚举值: 1, 2, 3" → [[1,1], [2,2], [3,3]] (must come before range pattern)
+    (
+        r"枚举值\s*[:：]\s*(.+)",
+        lambda m: [
+            [int(v.strip()), int(v.strip())]
+            for v in m.group(1).split(",")
+            if v.strip().lstrip("-").isdigit()
+        ],
+    ),
+    # "范围0-100" / "0~100" / "[0, 100]" → [[0, 100]]
+    (
+        r"\[?\s*(-?\d+)\s*[,，\-~]\s*(-?\d+)\s*\]?",
+        lambda m: [[int(m.group(1)), int(m.group(2))]],
+    ),
+]
+
+
+def _try_deterministic_range(text: str) -> list | None:
+    """Try deterministic extraction of range from text.
+
+    Returns parsed result if pattern matches, None otherwise.
+    """
+    for pattern, extractor in _RANGE_PATTERNS:
+        m = re.search(pattern, text)
+        if m:
+            try:
+                result = extractor(m)
+                if result:  # Only return if non-empty
+                    return result
+            except (ValueError, IndexError):
+                continue
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Phase 1: Validation functions for allowed_range_value
+# ---------------------------------------------------------------------------
+
+
+def _validate_range_structure(
+    ranges: list,
+    param_type: str = "",
+) -> tuple[bool, str]:
+    """Validate structure of allowed_range_value array.
+
+    Checks:
+    1. Each element is [min, max] with min <= max
+    2. Values are int/float or null
+    3. Type compatibility (unsigned types must be non-negative)
+    4. Reasonable values (not exceeding 10^9)
+    """
+    if not isinstance(ranges, list):
+        return False, "ranges must be a list"
+
+    if not ranges:  # Empty is valid
+        return True, ""
+
+    for i, r in enumerate(ranges):
+        if not isinstance(r, list) or len(r) != 2:
+            return False, f"range[{i}] must be [min, max], got {r}"
+
+        min_val, max_val = r
+
+        # Type check
+        for j, val in enumerate([min_val, max_val]):
+            if val is not None and not isinstance(val, (int, float)):
+                return False, f"range[{i}][{j}] must be int/float or null, got {type(val).__name__}"
+
+        # min <= max check
+        if min_val is not None and max_val is not None:
+            if min_val > max_val:
+                return False, f"range[{i}]: min ({min_val}) > max ({max_val})"
+
+        # Type compatibility check
+        if "uint" in param_type.lower():
+            for j, val in enumerate([min_val, max_val]):
+                if val is not None and val < 0:
+                    return False, f"range[{i}][{j}]: negative value {val} for unsigned type"
+
+        # Reasonable value check
+        for j, val in enumerate([min_val, max_val]):
+            if val is not None and abs(val) > 1e9:
+                return False, f"range[{i}][{j}]: value {val} seems unreasonably large"
+
+    return True, ""
+
+
+def _validate_range_source(
+    ranges: list,
+    context_text: str,
+) -> tuple[bool, str]:
+    """Validate that range values appear in source text.
+
+    This is a soft check: empty ranges pass, missing values log warning but pass.
+    """
+    if not ranges:
+        return True, ""  # Empty range is valid
+
+    for r in ranges:
+        min_val, max_val = r
+        # Convert to string for text search
+        for val in [min_val, max_val]:
+            if val is not None:
+                val_str = str(int(val)) if isinstance(val, float) and val == int(val) else str(val)
+                if val_str not in context_text:
+                    # Soft warning, don't fail
+                    logger.debug(
+                        "Range source validation: value %s not found in source text",
+                        val_str,
+                    )
+
+    return True, ""
+
+
+async def _batch_parse_dimensions(params: list[dict]) -> dict[tuple[str, str], list[list] | list[int]]:
+    """Collect all shape values and parse via LLM with deterministic preprocessing + validation.
+
+    Flow:
+    1. Deterministic preprocessing: regex-based parsing for common patterns
+    2. LLM batch parsing for remaining shapes
+    3. Alignment validation: if mismatch, fallback to per-item LLM calls
+    4. Structure validation: validate each parsed result
 
     Returns:
         Map of (function_name, param_name) → dimensions array.
@@ -206,12 +469,31 @@ async def _batch_parse_dimensions(params: list[dict]) -> dict[tuple[str, str], l
     if not shape_entries:
         return {}
 
-    # Build indexed list for LLM
-    indexed_shapes = [
-        f"{i + 1}. {e['shape']}" for i, e in enumerate(shape_entries)
-    ]
-    shapes_text = "\n".join(indexed_shapes)
+    # Phase 1: Deterministic preprocessing
+    result: dict[tuple[str, str], list] = {}
+    llm_needed: list[dict] = []
+    deterministic_count = 0
 
+    for entry in shape_entries:
+        deterministic = _try_deterministic_parse(entry["shape"])
+        if deterministic is not None:
+            key = (entry["function_name"], entry["param_name"])
+            is_valid, _ = _validate_dimensions_structure(deterministic)
+            result[key] = deterministic if is_valid else []
+            deterministic_count += 1
+        else:
+            llm_needed.append(entry)
+
+    if deterministic_count > 0:
+        logger.info(
+            "BuildParamConstraint: deterministic preprocessing handled %d/%d shapes",
+            deterministic_count, len(shape_entries),
+        )
+
+    if not llm_needed:
+        return result
+
+    # Phase 2: LLM batch parsing
     try:
         llm = ChatOpenAI(
             api_key=settings.active_api_key,
@@ -219,26 +501,90 @@ async def _batch_parse_dimensions(params: list[dict]) -> dict[tuple[str, str], l
             model=settings.active_model,
             temperature=0.1,
         )
-        prompt = SHAPE_TO_DIMENSIONS_PROMPT.format(shapes=shapes_text)
-        response = await llm.ainvoke(prompt)
-        text = response.content if hasattr(response, "content") else str(response)
-
-        parsed = _parse_dimensions_response(text)
-
-        result: dict[tuple[str, str], list] = {}
-        for i, entry in enumerate(shape_entries):
+    except Exception:
+        logger.exception("BuildParamConstraint: failed to create LLM for dimensions")
+        # Fallback: empty for all remaining
+        for entry in llm_needed:
             key = (entry["function_name"], entry["param_name"])
-            if i < len(parsed):
-                result[key] = parsed[i]
-            else:
-                result[key] = []
-
-        logger.info("BuildParamConstraint: parsed %d dimensions via LLM", len(result))
+            result[key] = []
         return result
 
-    except Exception:
-        logger.exception("BuildParamConstraint: LLM dimensions parsing failed")
-        return {}
+    async def _parse_single(entry: dict) -> list:
+        """Parse a single shape via LLM."""
+        prompt = SHAPE_TO_DIMENSIONS_PROMPT.format(shapes=f"1. {entry['shape']}")
+        try:
+            response = await llm.ainvoke(prompt)
+            text = response.content if hasattr(response, "content") else str(response)
+            parsed = _parse_dimensions_response(text)
+            if parsed and len(parsed) == 1:
+                return parsed[0]
+            return parsed if isinstance(parsed, list) and _is_rank_format(parsed) else []
+        except Exception:
+            logger.warning("BuildParamConstraint: LLM failed for shape '%s'", entry["shape"])
+            return []
+
+    # Build indexed list for batch LLM call
+    indexed_shapes = [f"{i + 1}. {e['shape']}" for i, e in enumerate(llm_needed)]
+    shapes_text = "\n".join(indexed_shapes)
+
+    parsed: list = []
+    for attempt in range(_MAX_DIMENSIONS_RETRIES + 1):
+        try:
+            prompt = SHAPE_TO_DIMENSIONS_PROMPT.format(shapes=shapes_text)
+            response = await llm.ainvoke(prompt)
+            text = response.content if hasattr(response, "content") else str(response)
+            parsed = _parse_dimensions_response(text)
+            break
+        except Exception:
+            logger.warning(
+                "BuildParamConstraint: LLM batch call failed (attempt %d/%d)",
+                attempt + 1, _MAX_DIMENSIONS_RETRIES + 1,
+            )
+            if attempt == _MAX_DIMENSIONS_RETRIES:
+                parsed = []
+
+    # Phase 3: Alignment validation
+    is_aligned, error = _validate_dimensions_alignment(len(llm_needed), parsed)
+
+    if not is_aligned:
+        logger.warning(
+            "BuildParamConstraint: dimensions alignment failed: %s — fallback to per-item",
+            error,
+        )
+        # Fallback: per-item LLM calls
+        sem = asyncio.Semaphore(_CONCURRENCY_LIMIT)
+
+        async def _process_one(entry: dict) -> tuple[tuple[str, str], list]:
+            async with sem:
+                single_parsed = await _parse_single(entry)
+                is_valid, _ = _validate_dimensions_structure(single_parsed)
+                key = (entry["function_name"], entry["param_name"])
+                return key, single_parsed if is_valid else []
+
+        tasks = [_process_one(e) for e in llm_needed]
+        per_item_results = await asyncio.gather(*tasks)
+        for key, value in per_item_results:
+            result[key] = value
+    else:
+        # Alignment OK: structure validation + store
+        for i, entry in enumerate(llm_needed):
+            key = (entry["function_name"], entry["param_name"])
+            dims = parsed[i]
+            is_valid, validation_error = _validate_dimensions_structure(dims)
+            if is_valid:
+                result[key] = dims
+            else:
+                logger.warning(
+                    "BuildParamConstraint: dimensions structure invalid for %s.%s: %s",
+                    entry["function_name"], entry["param_name"], validation_error,
+                )
+                result[key] = []
+
+    logger.info(
+        "BuildParamConstraint: parsed %d dimensions (%d deterministic, %d LLM)",
+        len(result), deterministic_count, len(llm_needed),
+    )
+    return result
 
 
 async def _batch_extract_allowed_range(
@@ -247,10 +593,12 @@ async def _batch_extract_allowed_range(
 ) -> dict[tuple[str, str], list]:
     """Batch extract allowed_range_value for non-Tensor params via LLM.
 
-    Uses per-platform extraction: each (param, platform) gets its own LLM call,
-    but params without platform-specific context share a single call.
-
-    Special case: bool type params always get [true, false] without LLM call.
+    Flow:
+    1. Bool type params: short-circuit with [True, False]
+    2. Deterministic preprocessing: regex-based extraction for common patterns
+    3. LLM extraction with retry for remaining params
+    4. Structural validation: min <= max, type compatibility
+    5. Source validation: check if values appear in source text (soft check)
 
     Returns:
         Map of (function_name, param_name) → [[min,max], ...] array.
@@ -261,23 +609,53 @@ async def _batch_extract_allowed_range(
     result: dict[tuple[str, str], list] = {}
     sem = asyncio.Semaphore(_CONCURRENCY_LIMIT)
 
-    # Separate bool params (short-circuit) from LLM-processed params
+    # Phase 0: Separate bool params (short-circuit)
     bool_params: list[dict] = []
-    llm_params: list[dict] = []
+    remaining_params: list[dict] = []
     for p in params:
         if _is_bool_type(p.get("param_type", "")):
             bool_params.append(p)
         else:
-            llm_params.append(p)
+            remaining_params.append(p)
 
-    # Bool params: directly return [true, false]
     for p in bool_params:
         key = (p["function_name"], p["param_name"])
         result[key] = [True, False]
 
-    if not llm_params:
+    # Phase 1: Deterministic preprocessing
+    llm_needed: list[dict] = []
+    deterministic_count = 0
+
+    for p in remaining_params:
+        llm_desc = p.get("llm_description", "") or ""
+        if not llm_desc.strip() and not constraints_text.strip():
+            key = (p["function_name"], p["param_name"])
+            result[key] = []
+            continue
+
+        deterministic = _try_deterministic_range(llm_desc)
+        if deterministic is None:
+            deterministic = _try_deterministic_range(constraints_text)
+
+        if deterministic is not None:
+            key = (p["function_name"], p["param_name"])
+            param_type = p.get("param_type", "")
+            is_valid, _ = _validate_range_structure(deterministic, param_type)
+            result[key] = deterministic if is_valid else []
+            deterministic_count += 1
+        else:
+            llm_needed.append(p)
+
+    if deterministic_count > 0:
+        logger.info(
+            "BuildParamConstraint: deterministic range extraction handled %d/%d params",
+            deterministic_count, len(remaining_params),
+        )
+
+    if not llm_needed:
         return result
 
+    # Phase 2: LLM extraction with retry + validation
     try:
         llm = ChatOpenAI(
             api_key=settings.active_api_key,
@@ -287,9 +665,12 @@ async def _batch_extract_allowed_range(
         )
     except Exception:
         logger.exception("BuildParamConstraint: failed to create LLM for allowed_range")
-        return {}
+        for p in llm_needed:
+            key = (p["function_name"], p["param_name"])
+            result[key] = []
+        return result
 
-    async def _extract_one(param: dict) -> tuple[tuple[str, str], list]:
+    async def _extract_one_with_retry(param: dict) -> tuple[tuple[str, str], list]:
         async with sem:
             key = (param["function_name"], param["param_name"])
             c_type = param.get("param_type", "")
@@ -305,38 +686,71 @@ async def _batch_extract_allowed_range(
             if not context_text.strip():
                 return key, []
 
-            try:
-                prompt = ALLOWED_RANGE_VALUE_BUILD_PROMPT.format(
-                    param_name=param["param_name"],
-                    param_type=c_type,
-                    context_text=context_text,
-                )
-                response = await llm.ainvoke(prompt)
-                text = response.content if hasattr(response, "content") else str(response)
-                parsed = _parse_allowed_range_response(text)
-                return key, parsed
-            except Exception:
-                logger.warning(
-                    "BuildParamConstraint: LLM allowed_range failed for %s",
-                    param["param_name"],
-                )
-                return key, []
+            # Retry loop
+            for attempt in range(_MAX_DIMENSIONS_RETRIES + 1):
+                try:
+                    prompt = ALLOWED_RANGE_VALUE_BUILD_PROMPT.format(
+                        param_name=param["param_name"],
+                        param_type=c_type,
+                        context_text=context_text,
+                    )
+                    response = await llm.ainvoke(prompt)
+                    text = response.content if hasattr(response, "content") else str(response)
+                    parsed = _parse_allowed_range_response(text)
 
-    results = await asyncio.gather(*[_extract_one(p) for p in llm_params])
-    for key, value in results:
+                    # Structural validation
+                    is_valid, error = _validate_range_structure(parsed, c_type)
+                    if not is_valid:
+                        if attempt < _MAX_DIMENSIONS_RETRIES:
+                            logger.warning(
+                                "BuildParamConstraint: range validation failed for %s (attempt %d): %s",
+                                param["param_name"], attempt + 1, error,
+                            )
+                            continue
+                        else:
+                            logger.warning(
+                                "BuildParamConstraint: range validation failed after %d attempts for %s: %s",
+                                _MAX_DIMENSIONS_RETRIES + 1, param["param_name"], error,
+                            )
+                            return key, []
+
+                    # Source validation (soft check)
+                    _validate_range_source(parsed, context_text)
+
+                    return key, parsed
+
+                except Exception:
+                    if attempt < _MAX_DIMENSIONS_RETRIES:
+                        logger.warning(
+                            "BuildParamConstraint: LLM call failed for %s (attempt %d)",
+                            param["param_name"], attempt + 1,
+                        )
+                        continue
+                    else:
+                        logger.warning(
+                            "BuildParamConstraint: LLM call failed after %d attempts for %s",
+                            _MAX_DIMENSIONS_RETRIES + 1, param["param_name"],
+                        )
+                        return key, []
+
+            return key, []
+
+    tasks = [_extract_one_with_retry(p) for p in llm_needed]
+    llm_results = await asyncio.gather(*tasks)
+    for key, value in llm_results:
         result[key] = value
 
     extracted = sum(1 for v in result.values() if v)
     logger.info(
         "BuildParamConstraint: extracted allowed_range for %d/%d non-Tensor params "
-        "(%d bool short-circuited)",
-        extracted, len(params), len(bool_params),
+        "(%d bool short-circuited, %d deterministic, %d LLM)",
+        extracted, len(params), len(bool_params), deterministic_count, len(llm_needed),
     )
     return result
 
 
-def _parse_dimensions_response(text: str) -> list[list]:
-    """Parse LLM response: array of dimension arrays."""
+def _parse_dimensions_response(text: str) -> list[list] | list[int]:
+    """Parse LLM response: either rank spec [N, N] or per-dimension [[min,max], ...]."""
     match = _JSON_BLOCK_RE.search(text)
     if match:
         text = match.group(1)
@@ -345,6 +759,10 @@ def _parse_dimensions_response(text: str) -> list[list]:
     try:
         data = json.loads(text)
         if isinstance(data, list):
+            # Rank specification: flat list of ints like [5, 5]
+            if data and all(isinstance(item, int) for item in data):
+                return data
+            # Per-dimension ranges: nested lists like [[null,null], [3,3]]
             return [item if isinstance(item, list) else [] for item in data]
     except json.JSONDecodeError:
         pass
@@ -355,6 +773,10 @@ def _parse_dimensions_response(text: str) -> list[list]:
         try:
             data = json.loads(arr_match.group(0))
             if isinstance(data, list):
+                # Rank specification: flat list of ints like [5, 5]
+                if data and all(isinstance(item, int) for item in data):
+                    return data
+                # Per-dimension ranges: nested lists like [[null,null], [3,3]]
                 return [item if isinstance(item, list) else [] for item in data]
         except json.JSONDecodeError:
             pass

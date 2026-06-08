@@ -22,9 +22,15 @@ LLM_DESCRIPTION_EXTRACT_PROMPT = """\
    - "Atlas A3 支持..."
    - "仅 Atlas 200I 产品..."
    - 任何带有平台名称前缀的约束
-7. 如果某个属性在文档中没有通用信息（只有平台特定信息），则省略该属性
-8. 保持简洁但完整，避免冗余
-9. 同时提取文档中与描述对应的原始句子/段落，作为 src_content 溯源依据
+7. **不要包含**与其他参数之间的关系约束，如：
+   - "与参数X的数据类型一致"
+   - "shape的第N维与参数Y相同"
+   - "取值依赖参数Z"
+   - "必须与input的dtype保持一致"
+   这类跨参数关系由其他模块专门处理，不要在描述中重复
+8. 如果某个属性在文档中没有通用信息（只有平台特定信息），则省略该属性
+9. 保持简洁但完整，避免冗余
+10. 同时提取文档中与描述对应的原始句子/段落，作为 src_content 溯源依据
 
 严格按以下 JSON 格式返回，不要添加任何其他文字：
 {{
@@ -236,7 +242,7 @@ FUNCTION_SIGNATURE_EXTRACT_PROMPT = """\
 1. 每个函数对应一个对象
 2. function_name: 函数名
 3. return_type: 返回值类型
-4. parameters: 参数列表，每个参数包含 name（参数名）和 type（C 类型，去掉指针符号 *）
+4. parameters: 参数列表，每个参数包含 name（参数名）和 type（C 基础类型名，去掉 const、指针符号 * 等修饰符）
 5. full_signature: 完整的函数签名字符串，格式为 "返回值类型 函数名(参数1类型 *参数1名, 参数2类型 *参数2名, ...)"
    - 保留原始代码中的 const、指针 * 等修饰符
    - 参数之间用逗号和空格分隔
@@ -444,18 +450,23 @@ DTYPE_CONSTRAINT_TEXT_PROMPT = """\
 
 
 SHAPE_TO_DIMENSIONS_PROMPT = """\
-你是一个维度解析专家。将输入的 shape 描述列表解析为二维数组格式。
+你是一个维度解析专家。将输入的 shape 描述列表解析为维度约束数组。
 
 规则：
-1. "1-8" → [[1,8]]
-2. "(N,C,H,W)" 含4维 → [[null,null],[null,null],[null,null],[null,null]]
-   每个维度对应一组 [min,max]，若无明确范围用 null
-3. "2D" → 二维但无范围 → [[null,null],[null,null]]
-4. 空字符串或无法解析 → []
-5. "与输入相同" → []
-6. "标量" 或 "0-D" → []
-7. "1-D" → [[null,null]]
-8. "[2, 3, 4]" 表示固定3维 → [[2,2],[3,3],[4,4]]
+1. "X-Y" 表示维度数量范围（支持 X 到 Y 维），返回 [X, Y]
+   例如 "0-8" 表示支持 0 到 8 维 → [0, 8]
+   例如 "1-8" 表示支持 1 到 8 维 → [1, 8]
+2. 含符号维度（如 N, D_out 等非纯数字）→ 只返回维度数量，格式为 [数量, 数量]
+   例如 "(N, D_out, H_out, W_out, 3)" 有 5 个维度 → [5, 5]
+   例如 "(N, C, H, W)" 有 4 个维度 → [4, 4]
+   例如 "5" 表示 5 维 → [5, 5]
+3. "2D" 表示 2 维 → [2, 2]
+4. "1-D" 表示 1 维 → [1, 1]
+5. 空字符串或无法解析 → []
+6. "与输入相同" 或 "same as input" → []
+7. "标量" 或 "0-D" → []
+8. 纯数字维度（无符号）→ 逐维度范围，格式为 [[min1,max1], [min2,max2], ...]
+   例如 "[2, 3, 4]" 表示固定 3 维 → [[2,2], [3,3], [4,4]]
 
 严格按 JSON 数组返回，每个 shape 对应一个元素，顺序与输入一致。
 不要添加任何其他文字。
@@ -517,6 +528,34 @@ RELATION_OBJECT_BUILD_PROMPT = """\
 13. 不要在 expr 中使用平台值作为判断条件
 14. 涉及生成器表达式时必须包裹在 all() 或 any() 中，不允许 lambda
 
+## 示例
+
+### 示例 1: shape_equality
+输入: description="x 和 y 的 shape 必须完全相同", params=["x", "y"]
+输出: {{"expr_type": "shape_equality", "expr": "x.shape == y.shape"}}
+
+### 示例 2: shape_broadcast
+输入: description="x 和 y 的 shape 需满足广播关系", params=["x", "y"]
+输出: {{"expr_type": "shape_broadcast", "expr": "all(x.shape[i] == y.shape[i] or x.shape[i] == 1 or y.shape[i] == 1 for i in range(len(x.shape)))"}}
+
+### 示例 3: shape_value_dependency (条件逻辑 — 关键)
+输入: description="当 scale 为 1 维时，其长度等于 x.shape[axis]", params=["x", "scale", "axis"]
+输出: {{"expr_type": "shape_value_dependency", "expr": "(scale.shape[0] == x.shape[axis.range_value]) if len(scale.shape) == 1 else True"}}
+注意：条件不满足时返回 True（约束仅在条件成立时生效）
+
+### 示例 4: value_dependency (蕴含逻辑)
+输入: description="如果 x 是 FLOAT16，则 y 也必须是 FLOAT16", params=["x", "y"]
+输出: {{"expr_type": "value_dependency", "expr": "(y.dtype == 'FLOAT16') if (x.dtype == 'FLOAT16') else True"}}
+
+### 示例 5: 全称量词
+输入: description="x 的所有维度必须大于 0", params=["x"]
+输出: {{"expr_type": "shape_dependency", "expr": "all(d > 0 for d in x.shape)"}}
+
+### 示例 6: 无法形式化
+输入: description="x 的取值需满足特定条件（详见说明）", params=["x"]
+输出: {{"expr_type": "value_dependency", "expr": ""}}
+注意：无法写出明确表达式时返回空字符串
+
 ## 函数签名上下文
 {signatures_text}
 
@@ -527,5 +566,5 @@ description：{description}
 source_citation：{source_citation}
 
 严格按以下 JSON 返回，不要添加任何其他文字：
-{{"expr_type": "...", "expr": "..."}}
+{{"expr_type": "...", "expr": "...", "confidence": "high/medium/low", "uncertainty_reason": "不确定原因（仅当 confidence != high 时）"}}
 """
