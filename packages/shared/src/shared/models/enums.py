@@ -58,6 +58,7 @@ class TaskComplexity(StrEnum):
 class LLMProvider(StrEnum):
     ZAI = "zai"
     DEEPSEEK = "deepseek"
+    OWN_AI = "own-ai"
 
 
 class TestCaseCategory(StrEnum):
