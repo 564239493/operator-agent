@@ -26,6 +26,18 @@ async def save_relations_node(state: RelationExtractState) -> dict[str, Any]:
         logger.info("SaveRelations: no relations to save for doc_id=%s", doc_id)
         return {"error": None}
 
+    # Log coverage report for monitoring
+    report = state.get("coverage_report")
+    if report:
+        logger.info(
+            "CoverageReport: doc_id=%s coverage=%s uncovered=%s rounds=%d total=%d",
+            doc_id,
+            report.get("coverage", ""),
+            report.get("uncovered_params", []),
+            report.get("total_rounds", 0),
+            report.get("total", 0),
+        )
+
     try:
         result = await _mcp_client.save_param_relations(doc_id, merged)
         logger.info(

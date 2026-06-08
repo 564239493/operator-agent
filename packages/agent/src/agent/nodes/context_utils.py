@@ -26,7 +26,8 @@ def extract_param_context(sections_text: str, param_name: str) -> str:
     2. Find lines mentioning *param_name* (with word-boundary awareness)
     3. Keep ±2 adjacent lines for semantic coherence
     4. Always preserve Markdown table headers (first ``|`` row + separator)
-    5. Join the selected lines; fall back to full text if result is too short
+    5. v2: Expand to full <tr>...</tr> for HTML table rows
+    6. Join the selected lines; fall back to full text if result is too short
     """
     lines = sections_text.split("\n")
     relevant: set[int] = set()
@@ -35,6 +36,24 @@ def extract_param_context(sections_text: str, param_name: str) -> str:
     for i, line in enumerate(lines):
         if _param_matches(line, param_name):
             for j in range(max(0, i - 2), min(len(lines), i + 3)):
+                relevant.add(j)
+
+    # Phase 1.5 (v2): expand HTML <tr> rows to full row boundaries
+    in_html_table = False
+    html_table_rows: list[tuple[int, int]] = []
+    row_start = -1
+    for i, line in enumerate(lines):
+        lower = line.lower()
+        if "<tr" in lower:
+            in_html_table = True
+            row_start = i
+        if in_html_table and "</tr" in lower:
+            html_table_rows.append((row_start, i))
+            in_html_table = False
+
+    for tr_start, tr_end in html_table_rows:
+        if any(tr_start <= idx <= tr_end for idx in relevant):
+            for j in range(tr_start, tr_end + 1):
                 relevant.add(j)
 
     # Phase 2: always keep table headers (first | row + separator row)

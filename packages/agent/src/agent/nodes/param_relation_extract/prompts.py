@@ -1,9 +1,6 @@
 """Prompt template for parameter relation extraction."""
 
-RELATION_EXTRACT_PROMPT = """\
-你是一个参数关系提取专家。从下面的文档 section 内容中，提取所有参数之间的耦合关系。
-
-## 关系类型定义
+RELATION_TYPE_DEFINITIONS = """\
 每条关系的 relation_type 必须是以下值之一：
 - "dtype"：仅涉及数据类型的约束或依赖
 - "shape"：仅涉及维度/shape 的约束或依赖
@@ -14,7 +11,13 @@ RELATION_EXTRACT_PROMPT = """\
 - "dformat&shape"：同时涉及数据格式和 shape
 - "dtype&dformat&shape"：三者同时涉及
 - "presence"：存在性依赖（一个参数是否存在/为空取决于另一个参数的状态）
-- "shape&value"：shape 与取值的耦合
+- "shape&value"：shape 与取值的耦合"""
+
+RELATION_EXTRACT_PROMPT = """\
+你是一个参数关系提取专家。从下面的文档 section 内容中，提取所有参数之间的耦合关系。
+
+## 关系类型定义
+{relation_types}
 
 ## 提取规则
 1. 只提取涉及两个或两个以上参数的关系，单参数自身约束不提取

@@ -10,7 +10,9 @@ class RelationExtractState(TypedDict, total=False):
     operator_name: str
     ws_section_content: str
     exe_section_content: str
+    param_names: list[str]
     ws_relations: list[dict[str, Any]]
     exe_relations: list[dict[str, Any]]
     merged_relations: list[dict[str, Any]]
+    coverage_report: dict[str, Any]
     error: Annotated[str | None, merge_errors]
