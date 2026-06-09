@@ -203,6 +203,75 @@
   .case-meta-grid .meta-item { font-size: .82rem; color: #4b5563; }
   .case-meta-grid .meta-item strong { color: #1f2937; display: block; font-size: .95rem; font-family: 'Consolas','Monaco','Courier New',monospace; }
   .json-tree .jcount { color: #6b7280; font-size: .75rem; margin-left: 6px; font-style: italic; }
+
+  /* ── Execute (ExecuterAgent) module ─────────────────────────────────── */
+  .exec-form-label { display: block; font-size: .8rem; color: #4b5563; margin-bottom: 4px; font-weight: 500; }
+  .exec-form-input { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: .9rem; transition: border-color .15s; }
+  .exec-form-input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79,70,229,.1); }
+  .exec-form-select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: .9rem; background: #fff; }
+  .exec-form-select:focus { outline: none; border-color: #4f46e5; }
+  .exec-textarea { width: 100%; flex: 1; min-height: 160px; border: 1px solid #ddd; border-radius: 6px; padding: 12px; font-family: 'Consolas','Monaco','Courier New',monospace; font-size: .82rem; resize: vertical; line-height: 1.5; transition: border-color .15s; }
+  .exec-textarea:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79,70,229,.1); }
+  .exec-textarea::placeholder { color: #b0b8c4; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+  .exec-pipeline { display: flex; flex-direction: column; gap: 0; position: relative; }
+  .exec-step { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; transition: all .25s; position: relative; }
+  .exec-step + .exec-step { margin-top: -1px; border-top-left-radius: 0; border-top-right-radius: 0; }
+  .exec-step:not(:last-child) { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .exec-step.active { border-color: #4f46e5; background: #f5f3ff; z-index: 1; }
+  .exec-step.done { border-color: #86efac; background: #f0fdf4; }
+  .exec-step.error { border-color: #fca5a5; background: #fef2f2; }
+
+  .exec-step-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: .8rem; font-weight: 700; transition: all .25s; }
+  .exec-step .exec-step-icon { background: #f3f4f6; color: #9ca3af; }
+  .exec-step.active .exec-step-icon { background: #4f46e5; color: #fff; animation: execPulse 1.5s ease-in-out infinite; }
+  .exec-step.done .exec-step-icon { background: #16a34a; color: #fff; }
+  .exec-step.error .exec-step-icon { background: #dc2626; color: #fff; }
+  @keyframes execPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(79,70,229,.35); } 50% { box-shadow: 0 0 0 6px rgba(79,70,229,0); } }
+
+  .exec-step-body { flex: 1; min-width: 0; }
+  .exec-step-title { font-size: .9rem; font-weight: 600; color: #374151; line-height: 32px; }
+  .exec-step.active .exec-step-title { color: #4f46e5; }
+  .exec-step.done .exec-step-title { color: #166534; }
+  .exec-step.error .exec-step-title { color: #991b1b; }
+  .exec-step-desc { font-size: .78rem; color: #9ca3af; margin-top: 2px; }
+  .exec-step.active .exec-step-desc { color: #6366f1; }
+  .exec-step.done .exec-step-desc { color: #16a34a; }
+  .exec-step.error .exec-step-desc { color: #dc2626; }
+
+  .exec-step-badge { flex-shrink: 0; align-self: center; }
+  .exec-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 12px; font-size: .72rem; font-weight: 600; }
+  .exec-badge-pending { background: #f3f4f6; color: #9ca3af; }
+  .exec-badge-running { background: #e0e7ff; color: #4338ca; }
+  .exec-badge-success { background: #dcfce7; color: #166534; }
+  .exec-badge-failed { background: #fee2e2; color: #991b1b; }
+  .exec-badge-running .exec-spinner { width: 10px; height: 10px; border-width: 1.5px; }
+  .exec-spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #c7d2fe; border-top-color: #4f46e5; border-radius: 50%; animation: spin .6s linear infinite; }
+
+  .exec-result-panel { margin-top: 16px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  .exec-result-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+  .exec-result-header h3 { font-size: .9rem; color: #374151; margin: 0; }
+  .exec-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+  .exec-metric { padding: 14px 16px; text-align: center; border-right: 1px solid #e5e7eb; }
+  .exec-metric:last-child { border-right: none; }
+  .exec-metric-value { font-size: 1.4rem; font-weight: 700; font-family: 'Consolas','Monaco','Courier New',monospace; }
+  .exec-metric-label { font-size: .72rem; color: #9ca3af; margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; }
+  .exec-metric-value.val-pass { color: #16a34a; }
+  .exec-metric-value.val-fail { color: #dc2626; }
+  .exec-metric-value.val-total { color: #1d4ed8; }
+  .exec-metric-value.val-status { font-size: .85rem; }
+
+  .exec-code-toggle { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: #f9fafb; border-top: 1px solid #e5e7eb; cursor: pointer; font-size: .82rem; color: #6b7280; transition: .15s; user-select: none; }
+  .exec-code-toggle:hover { background: #f3f4f6; color: #374151; }
+  .exec-code-toggle .arrow { transition: transform .2s; font-size: .7rem; }
+  .exec-code-toggle.open .arrow { transform: rotate(90deg); }
+  .exec-code-body { display: none; }
+  .exec-code-body.open { display: block; }
+  .exec-code-body pre { margin: 0; background: #1e1e1e; color: #d4d4d4; padding: 16px; font-size: .8rem; line-height: 1.6; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; }
+
+  .exec-right-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: #c0c7d0; text-align: center; gap: 10px; }
+  .exec-right-empty svg { width: 56px; height: 56px; opacity: .35; }
+  .exec-right-empty p { font-size: .9rem; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -537,55 +606,108 @@
 
   <!-- Execute Panel -->
   <div class="panel" id="panelExecute">
-    <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h2 style="margin:0">用例执行 (ExecuterAgent)</h2>
+    <div class="split-panel">
+      <!-- Left: Input -->
+      <div class="split-left">
+        <div class="card" style="flex:1;display:flex;flex-direction:column">
+          <h2>输入测试用例</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label class="exec-form-label">算子名称</label>
+              <input id="execOperatorName" class="exec-form-input" type="text" placeholder="aclnnAdaLayerNorm">
+            </div>
+            <div>
+              <label class="exec-form-label">快速加载已有用例</label>
+              <select id="execCaseLoader" class="exec-form-select" onchange="loadCasesForExecute()">
+                <option value="">— 选择算子 —</option>
+              </select>
+            </div>
+          </div>
+          <label class="exec-form-label">cases.json 数据</label>
+          <textarea id="execCasesJson" class="exec-textarea" placeholder='粘贴 cases.json 内容，例如:&#10;[{"id":0,"name":"aclnnAdaLayerNorm","inputs":[...]}]'></textarea>
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+            <button id="execBtn" onclick="runExecute()">
+              <svg style="width:14px;height:14px;vertical-align:-2px;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              执行用例
+            </button>
+            <button class="secondary" onclick="document.getElementById('execCasesJson').value='';document.getElementById('execOperatorName').value=''">清空</button>
+          </div>
+          <div class="status" id="execStatus"></div>
+        </div>
       </div>
 
-      <div style="padding:14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px">
-        <div style="font-weight:600;color:#374151;margin-bottom:8px">输入测试用例数据</div>
-        <div style="display:grid;grid-template-columns:1fr 200px;gap:10px;margin-bottom:10px">
-          <div>
-            <label style="display:block;font-size:.8rem;color:#4b5563;margin-bottom:4px">算子名称</label>
-            <input id="execOperatorName" type="text" placeholder="例如: aclnnAdaLayerNorm" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:.9rem">
-          </div>
-          <div>
-            <label style="display:block;font-size:.8rem;color:#4b5563;margin-bottom:4px">快速加载</label>
-            <select id="execCaseLoader" onchange="loadCasesForExecute()" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:.9rem">
-              <option value="">— 选择已有用例 —</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label style="display:block;font-size:.8rem;color:#4b5563;margin-bottom:4px">cases.json 数据</label>
-          <textarea id="execCasesJson" style="width:100%;height:200px;border:1px solid #ddd;border-radius:6px;padding:12px;font-family:monospace;font-size:.85rem;resize:vertical" placeholder='粘贴 cases.json 内容，例如: [{"id":0,"name":"aclnnAdaLayerNorm","inputs":[...]}]'></textarea>
-        </div>
-        <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
-          <button id="execBtn" onclick="runExecute()">执行用例</button>
-          <button class="secondary" onclick="document.getElementById('execCasesJson').value=''">清空</button>
-        </div>
-        <div class="status" id="execStatus"></div>
-      </div>
+      <!-- Right: Pipeline + Results -->
+      <div class="split-right">
+        <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0">
+          <h2>执行流程</h2>
 
-      <div style="font-weight:600;color:#374151;margin-bottom:8px">执行进度</div>
-      <div id="execStepsWrap" style="flex:1;min-height:0;overflow-y:auto">
-        <ul class="parse-steps" id="execSteps">
-          <li class="parse-step" data-step="generate_atk">
-            <div class="step-icon">1</div>
-            <div class="step-info"><div class="step-text">生成 ATK 脚本</div><div class="step-detail" id="execStepDetail0"></div></div>
-          </li>
-          <li class="parse-step" data-step="cpu_derivation">
-            <div class="step-icon">2</div>
-            <div class="step-info"><div class="step-text">CPU 参考推导</div><div class="step-detail" id="execStepDetail1"></div></div>
-          </li>
-          <li class="parse-step" data-step="run_atk">
-            <div class="step-icon">3</div>
-            <div class="step-info"><div class="step-text">执行 ATK 测试</div><div class="step-detail" id="execStepDetail2"></div></div>
-          </li>
-        </ul>
-        <div id="execResult" style="display:none;margin-top:12px">
-          <div class="meta" id="execResultMeta"></div>
-          <pre id="execResultBody" style="background:#1e1e1e;color:#d4d4d4;padding:16px;border-radius:6px;overflow-x:auto;font-size:.85rem;line-height:1.5;white-space:pre-wrap;word-break:break-all;max-height:300px"></pre>
+          <!-- Empty state -->
+          <div class="exec-right-empty" id="execRightEmpty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <p>请在左侧输入用例数据并点击执行</p>
+          </div>
+
+          <!-- Pipeline steps (hidden initially) -->
+          <div id="execPipelineWrap" style="display:none;flex:1;min-height:0;overflow-y:auto">
+            <div class="exec-pipeline" id="execPipeline">
+              <div class="exec-step" id="execStep0">
+                <div class="exec-step-icon">1</div>
+                <div class="exec-step-body">
+                  <div class="exec-step-title">生成 ATK 脚本</div>
+                  <div class="exec-step-desc" id="execStepDesc0">调用 generator.py 生成可执行的 ATK 测试脚本</div>
+                </div>
+                <div class="exec-step-badge" id="execStepBadge0"><span class="exec-badge exec-badge-pending">等待中</span></div>
+              </div>
+              <div class="exec-step" id="execStep1">
+                <div class="exec-step-icon">2</div>
+                <div class="exec-step-body">
+                  <div class="exec-step-title">CPU 参考推导</div>
+                  <div class="exec-step-desc" id="execStepDesc1">通过 LLM 推导 CPU Golden Reference 实现</div>
+                </div>
+                <div class="exec-step-badge" id="execStepBadge1"><span class="exec-badge exec-badge-pending">等待中</span></div>
+              </div>
+              <div class="exec-step" id="execStep2">
+                <div class="exec-step-icon">3</div>
+                <div class="exec-step-body">
+                  <div class="exec-step-title">执行 ATK 测试</div>
+                  <div class="exec-step-desc" id="execStepDesc2">连接执行机运行 ATK 测试并验证结果</div>
+                </div>
+                <div class="exec-step-badge" id="execStepBadge2"><span class="exec-badge exec-badge-pending">等待中</span></div>
+              </div>
+            </div>
+
+            <!-- Result panel (hidden until complete) -->
+            <div class="exec-result-panel" id="execResultPanel" style="display:none">
+              <div class="exec-result-header">
+                <h3>执行结果</h3>
+                <span id="execResultStatus"></span>
+              </div>
+              <div class="exec-metrics" id="execMetrics">
+                <div class="exec-metric">
+                  <div class="exec-metric-value val-status" id="execMetricStatus">—</div>
+                  <div class="exec-metric-label">状态</div>
+                </div>
+                <div class="exec-metric">
+                  <div class="exec-metric-value val-pass" id="execMetricPassed">0</div>
+                  <div class="exec-metric-label">通过</div>
+                </div>
+                <div class="exec-metric">
+                  <div class="exec-metric-value val-fail" id="execMetricFailed">0</div>
+                  <div class="exec-metric-label">失败</div>
+                </div>
+                <div class="exec-metric">
+                  <div class="exec-metric-value val-total" id="execMetricTotal">0</div>
+                  <div class="exec-metric-label">总计</div>
+                </div>
+              </div>
+              <div class="exec-code-toggle" id="execCodeToggle" onclick="toggleExecCode()">
+                <span class="arrow">▶</span> 查看完整输出
+              </div>
+              <div class="exec-code-body" id="execCodeBody">
+                <pre id="execResultBody"></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1969,30 +2091,53 @@ function toggleCaseCard(idx) {
 /* ---------- Execute (ExecuterAgent) ---------- */
 
 const EXEC_STEPS = ['generate_atk', 'cpu_derivation', 'run_atk'];
+const EXEC_STEP_DESCS = [
+  '调用 generator.py 生成可执行的 ATK 测试脚本',
+  '通过 LLM 推导 CPU Golden Reference 实现',
+  '连接执行机运行 ATK 测试并验证结果',
+];
 
-function resetExecSteps() {
-  document.querySelectorAll('#execSteps .parse-step').forEach(el => {
-    el.className = 'parse-step';
-  });
-  EXEC_STEPS.forEach((_, i) => {
-    document.getElementById('execStepDetail' + i).textContent = '';
-  });
-  document.getElementById('execResult').style.display = 'none';
-}
-
-function setExecStep(index, state, detail) {
-  const stepEls = document.querySelectorAll('#execSteps .parse-step');
-  if (index > 0 && stepEls[index - 1].classList.contains('active')) {
-    stepEls[index - 1].classList.remove('active');
-    stepEls[index - 1].classList.add('done');
+function resetExecPipeline() {
+  for (let i = 0; i < 3; i++) {
+    const el = document.getElementById('execStep' + i);
+    el.className = 'exec-step';
+    document.getElementById('execStepDesc' + i).textContent = EXEC_STEP_DESCS[i];
+    document.getElementById('execStepBadge' + i).innerHTML = '<span class="exec-badge exec-badge-pending">等待中</span>';
   }
-  stepEls[index].className = 'parse-step ' + state;
-  if (detail) document.getElementById('execStepDetail' + index).textContent = detail;
+  document.getElementById('execResultPanel').style.display = 'none';
+  document.getElementById('execCodeBody').classList.remove('open');
+  document.getElementById('execCodeToggle').classList.remove('open');
 }
 
-function setExecStepActive(index, detail) { setExecStep(index, 'active', detail); }
-function setExecStepDone(index, detail) { setExecStep(index, 'done', detail); }
-function setExecStepError(index, detail) { setExecStep(index, 'error', detail); }
+function setExecStepState(index, state, detail) {
+  const el = document.getElementById('execStep' + index);
+  const badgeEl = document.getElementById('execStepBadge' + index);
+  const descEl = document.getElementById('execStepDesc' + index);
+
+  if (index > 0) {
+    const prev = document.getElementById('execStep' + (index - 1));
+    if (prev.classList.contains('active')) {
+      prev.classList.remove('active');
+      prev.classList.add('done');
+      document.getElementById('execStepBadge' + (index - 1)).innerHTML = '<span class="exec-badge exec-badge-success">✓ 完成</span>';
+    }
+  }
+
+  el.className = 'exec-step ' + state;
+  if (detail) descEl.textContent = detail;
+
+  const badgeMap = {
+    active: '<span class="exec-badge exec-badge-running"><span class="exec-spinner"></span> 执行中</span>',
+    done: '<span class="exec-badge exec-badge-success">✓ 完成</span>',
+    error: '<span class="exec-badge exec-badge-failed">✗ 失败</span>',
+  };
+  badgeEl.innerHTML = badgeMap[state] || '';
+}
+
+function toggleExecCode() {
+  document.getElementById('execCodeBody').classList.toggle('open');
+  document.getElementById('execCodeToggle').classList.toggle('open');
+}
 
 async function loadExecCaseOperators() {
   try {
@@ -2000,7 +2145,7 @@ async function loadExecCaseOperators() {
     const data = await res.json();
     const select = document.getElementById('execCaseLoader');
     const current = select.value;
-    select.innerHTML = '<option value="">— 选择已有用例 —</option>';
+    select.innerHTML = '<option value="">— 选择算子 —</option>';
     const rows = data.operators || [];
     rows.forEach(r => {
       const opt = document.createElement('option');
@@ -2054,10 +2199,12 @@ async function runExecute() {
   }
 
   btn.disabled = true;
-  statusEl.innerHTML = '<span class="spinner"></span>正在执行 ' + escapeHtml(operatorName) + ' 的用例...';
+  statusEl.innerHTML = '<span class="spinner"></span>正在提交 ' + escapeHtml(operatorName) + ' 执行任务...';
 
-  resetExecSteps();
-  setExecStepActive(0, '正在生成 ATK 脚本...');
+  document.getElementById('execRightEmpty').style.display = 'none';
+  document.getElementById('execPipelineWrap').style.display = '';
+  resetExecPipeline();
+  setExecStepState(0, 'active', '正在生成 ATK 脚本...');
 
   try {
     const res = await fetch('/api/v1/execute/run', {
@@ -2068,16 +2215,16 @@ async function runExecute() {
     const data = await res.json();
 
     if (!data.success) {
-      setExecStepError(0, data.error || '请求失败');
+      setExecStepState(0, 'error', data.error || '请求失败');
       statusEl.innerHTML = '<span class="badge badge-err">ERROR</span> ' + escapeHtml(data.error || '执行失败');
+      btn.disabled = false;
       return;
     }
 
-    statusEl.innerHTML = '<span class="spinner"></span>任务已提交，run_id: <code>' + escapeHtml(data.task_id) + '</code>，正在执行...';
-
+    statusEl.innerHTML = '<span class="spinner"></span>任务已提交 <code style="font-size:.78rem;color:#6b7280">' + escapeHtml(data.task_id) + '</code>';
     pollExecuteStatus(data.task_id, operatorName);
   } catch (err) {
-    setExecStepError(0, err.message);
+    setExecStepState(0, 'error', err.message);
     statusEl.innerHTML = '<span class="badge badge-err">ERROR</span> ' + escapeHtml(err.message);
     btn.disabled = false;
   }
@@ -2094,6 +2241,11 @@ async function pollExecuteStatus(taskId, operatorName) {
     'exec_generate_atk': 0,
     'exec_cpu_derivation': 1,
     'exec_run_atk': 2,
+  };
+  const stepLabels = {
+    0: '正在生成 ATK 脚本...',
+    1: '正在推导 CPU 参考实现...',
+    2: '正在执行 ATK 测试...',
   };
 
   try {
@@ -2112,55 +2264,52 @@ async function pollExecuteStatus(taskId, operatorName) {
       buffer = lines.pop() || '';
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const event = JSON.parse(line.slice(6));
-            const eventType = event.event_type;
-            const eventData = event.data || {};
-            const nodeId = eventData.node_id;
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const event = JSON.parse(line.slice(6));
+          const eventType = event.event_type;
+          const eventData = event.data || {};
+          const nodeId = eventData.node_id;
 
-            if (eventType === 'node.started' && nodeId in nodeToStep) {
-              const stepIdx = nodeToStep[nodeId];
-              if (stepIdx > currentStep) {
-                setExecStepDone(currentStep, '完成');
-                currentStep = stepIdx;
-              }
-              const labels = { 0: '正在生成 ATK 脚本...', 1: '正在推导 CPU 参考实现...', 2: '正在执行 ATK 测试...' };
-              setExecStepActive(stepIdx, labels[stepIdx]);
+          if (eventType === 'node.started' && nodeId in nodeToStep) {
+            const stepIdx = nodeToStep[nodeId];
+            if (stepIdx > currentStep) {
+              setExecStepState(currentStep, 'done', '完成');
+              currentStep = stepIdx;
             }
+            setExecStepState(stepIdx, 'active', stepLabels[stepIdx]);
+          }
 
-            if (eventType === 'node.completed' && nodeId in nodeToStep) {
-              const stepIdx = nodeToStep[nodeId];
-              const msg = eventData.message || '完成';
-              setExecStepDone(stepIdx, msg);
-            }
+          if (eventType === 'node.completed' && nodeId in nodeToStep) {
+            const stepIdx = nodeToStep[nodeId];
+            setExecStepState(stepIdx, 'done', eventData.message || '完成');
+          }
 
-            if (eventType === 'node.failed' && nodeId in nodeToStep) {
-              const stepIdx = nodeToStep[nodeId];
-              setExecStepError(stepIdx, eventData.error || '执行失败');
-            }
+          if (eventType === 'node.failed' && nodeId in nodeToStep) {
+            const stepIdx = nodeToStep[nodeId];
+            setExecStepState(stepIdx, 'error', eventData.error || '执行失败');
+          }
 
-            if (eventType === 'task.completed') {
-              for (let i = currentStep; i < EXEC_STEPS.length; i++) {
-                setExecStepDone(i, '完成');
-              }
-              const result = eventData.result || {};
-              const execResult = result.exec_result || {};
-              showExecResult(result, execResult);
-              statusEl.innerHTML = '<span class="badge badge-ok">SUCCESS</span> 执行完成。' +
-                (execResult.passed || 0) + '/' + (execResult.total || 0) + ' 用例通过';
-              btn.disabled = false;
-              return;
+          if (eventType === 'task.completed') {
+            for (let i = currentStep; i < EXEC_STEPS.length; i++) {
+              setExecStepState(i, 'done', '完成');
             }
+            const result = eventData.result || {};
+            const execResult = result.exec_result || {};
+            showExecResult(result, execResult);
+            statusEl.innerHTML = '<span class="badge badge-ok">SUCCESS</span> ' +
+              (execResult.passed || 0) + '/' + (execResult.total || 0) + ' 用例通过';
+            btn.disabled = false;
+            return;
+          }
 
-            if (eventType === 'task.failed') {
-              setExecStepError(currentStep, eventData.error || '执行失败');
-              statusEl.innerHTML = '<span class="badge badge-err">ERROR</span> ' + escapeHtml(eventData.error || '执行失败');
-              btn.disabled = false;
-              return;
-            }
-          } catch (_) {}
-        }
+          if (eventType === 'task.failed') {
+            setExecStepState(currentStep, 'error', eventData.error || '执行失败');
+            statusEl.innerHTML = '<span class="badge badge-err">ERROR</span> ' + escapeHtml(eventData.error || '执行失败');
+            btn.disabled = false;
+            return;
+          }
+        } catch (_) {}
       }
       attempts++;
     }
@@ -2174,21 +2323,20 @@ async function pollExecuteStatus(taskId, operatorName) {
 }
 
 function showExecResult(result, execResult) {
-  document.getElementById('execResult').style.display = '';
-  const metaEl = document.getElementById('execResultMeta');
-  const bodyEl = document.getElementById('execResultBody');
+  const panel = document.getElementById('execResultPanel');
+  panel.style.display = '';
 
-  const statusBadge = result.status === 'completed'
+  const statusEl = document.getElementById('execResultStatus');
+  statusEl.innerHTML = result.status === 'completed'
     ? '<span class="badge badge-ok">COMPLETED</span>'
     : '<span class="badge badge-err">FAILED</span>';
 
-  metaEl.innerHTML = statusBadge +
-    '<span>算子: <strong>' + escapeHtml(result.operator_name || '') + '</strong></span>' +
-    '<span>通过: <strong>' + (execResult.passed || 0) + '</strong></span>' +
-    '<span>失败: <strong>' + (execResult.failed || 0) + '</strong></span>' +
-    '<span>总计: <strong>' + (execResult.total || 0) + '</strong></span>';
-
-  bodyEl.textContent = JSON.stringify(result, null, 2);
+  document.getElementById('execMetricStatus').textContent = result.status === 'completed' ? '通过' : '失败';
+  document.getElementById('execMetricStatus').className = 'exec-metric-value ' + (result.status === 'completed' ? 'val-pass' : 'val-fail');
+  document.getElementById('execMetricPassed').textContent = execResult.passed || 0;
+  document.getElementById('execMetricFailed').textContent = execResult.failed || 0;
+  document.getElementById('execMetricTotal').textContent = execResult.total || 0;
+  document.getElementById('execResultBody').textContent = JSON.stringify(result, null, 2);
 }
 
 </script>

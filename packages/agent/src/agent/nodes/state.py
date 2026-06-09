@@ -12,6 +12,11 @@ def merge_errors(current: str | None, new: str | None) -> str | None:
     return f"{current}; {new}"
 
 
+def last_value(current: Any, new: Any) -> Any:
+    """Reducer: last write wins."""
+    return new
+
+
 class PipelineState(TypedDict, total=False):
     """State flowing through the document processing pipeline."""
 
@@ -43,6 +48,6 @@ class PipelineState(TypedDict, total=False):
     cases_count: int | None
     cases_seed: int | None
     # ── ExecuterAgent output (set by executer_subgraph nodes) ──
-    atk_executor_path: str | None
-    atk_executor_code: str
+    atk_executor_path: Annotated[str | None, last_value]
+    atk_executor_code: Annotated[str, last_value]
     exec_result: dict[str, Any]
