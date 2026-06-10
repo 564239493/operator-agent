@@ -11,12 +11,36 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agent.db import (
+    delete_task as db_delete_task,
+)
+from agent.db import (
+    get_task_chain as db_get_task_chain,
+)
+from agent.db import (
     query_events as db_query_events,
+)
+from agent.db import (
+    query_exec_results as db_query_exec_results,
+)
+from agent.db import (
     query_json_constraints_by_doc_id as db_query_json_constraints,
+)
+from agent.db import (
     query_params_by_doc_id as db_query_params_by_doc_id,
+)
+from agent.db import (
     query_relations_by_doc_id as db_query_relations_by_doc_id,
+)
+from agent.db import (
     query_run as db_query_run,
+)
+from agent.db import (
     query_runs as db_query_runs,
+)
+from agent.db import (
+    query_test_cases as db_query_test_cases,
+)
+from agent.db import (
     update_param_src_content as db_update_param_src_content,
 )
 from agent.runtime import RuntimeManager
@@ -30,8 +54,18 @@ def _get_manager(request: Request) -> RuntimeManager:
 
 
 @router.get("/runs")
-async def list_runs(operator_id: int | None = Query(default=None), limit: int = Query(default=20)):
-    return {"runs": db_query_runs(operator_id, limit)}
+async def list_runs(
+    operator_id: int | None = Query(default=None),
+    operator_name: str | None = Query(default=None),
+    task_type: str | None = Query(default=None),
+    limit: int = Query(default=20),
+):
+    return {"runs": db_query_runs(
+        operator_id=operator_id,
+        operator_name=operator_name,
+        task_type=task_type,
+        limit=limit,
+    )}
 
 
 @router.get("/runs/{run_id}")
@@ -100,7 +134,7 @@ async def stream_run(run_id: str, request: Request, since_seq: int = Query(defau
                     return
                 try:
                     data = await asyncio.wait_for(q.get(), timeout=15.0)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield ":keepalive\n\n"
                     continue
                 except asyncio.CancelledError:
@@ -240,4 +274,61 @@ async def get_run_json_constraints(run_id: str):
         "doc_id": doc_id,
         "operator_name": db_run.get("operator_name"),
         "json_constraints": result.get("json_constraints", {}),
+    }
+
+
+@router.get("/runs/{run_id}/chain")
+async def get_task_chain_endpoint(run_id: str):
+    """Return the full dependency chain for a task: task → parent → grandparent → ..."""
+    chain = db_get_task_chain(run_id)
+    if not chain:
+        return {"success": False, "error": "Task not found"}
+    return {"success": True, "chain": chain, "depth": len(chain)}
+
+
+@router.delete("/runs/{run_id}")
+async def delete_run(run_id: str):
+    """Delete a task and all its descendant tasks with cascading data."""
+    db_run = db_query_run(run_id)
+    if not db_run:
+        return {"success": False, "error": "Run not found"}
+
+    result = db_delete_task(run_id)
+    return {
+        "success": True,
+        "deleted_tasks": result["deleted_tasks"],
+        "task_ids": result["task_ids"],
+    }
+
+
+@router.get("/test-cases")
+async def list_test_cases(
+    task_id: str | None = Query(default=None),
+    operator_name: str | None = Query(default=None),
+    limit: int = Query(default=500),
+):
+    """Query test cases by task_id or operator_name."""
+    cases = db_query_test_cases(task_id=task_id, operator_name=operator_name, limit=limit)
+    return {
+        "success": True,
+        "count": len(cases),
+        "cases": cases,
+    }
+
+
+@router.get("/exec-results")
+async def list_exec_results(
+    task_id: str | None = Query(default=None),
+    case_id: int | None = Query(default=None),
+    operator_name: str | None = Query(default=None),
+    limit: int = Query(default=500),
+):
+    """Query exec results by task_id, case_id, or operator_name."""
+    results = db_query_exec_results(
+        task_id=task_id, case_id=case_id, operator_name=operator_name, limit=limit,
+    )
+    return {
+        "success": True,
+        "count": len(results),
+        "results": results,
     }

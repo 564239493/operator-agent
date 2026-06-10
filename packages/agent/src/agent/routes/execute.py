@@ -57,30 +57,48 @@ async def run_execute(body: ExecuteRunRequest, request: Request) -> ExecuteRunRe
             error="operator_name is required",
         )
 
-    try:
-        cases_data = json.loads(body.cases_json)
-        if not isinstance(cases_data, list):
+    from agent.db import create_run as db_create_run
+    from agent.db import find_parent_task
+    from agent.db import query_test_cases as db_query_test_cases
+
+    parent_id = find_parent_task(operator_name, "case_generate")
+
+    # Read cases from DB (preferred) or fall back to request body
+    db_cases = []
+    case_ids = []
+    if parent_id:
+        db_cases = db_query_test_cases(task_id=parent_id)
+        case_ids = [c["id"] for c in db_cases]
+
+    if db_cases:
+        cases_data = [c["case_data"] for c in db_cases]
+        cases_json_str = json.dumps(cases_data, ensure_ascii=False)
+    else:
+        try:
+            cases_data = json.loads(body.cases_json)
+            if not isinstance(cases_data, list):
+                return ExecuteRunResponse(
+                    success=False, task_id="", operator_name=operator_name,
+                    error="cases_json must be a JSON array",
+                )
+            cases_json_str = body.cases_json
+        except json.JSONDecodeError as e:
             return ExecuteRunResponse(
                 success=False, task_id="", operator_name=operator_name,
-                error="cases_json must be a JSON array",
+                error=f"Invalid JSON: {e}",
             )
-    except json.JSONDecodeError as e:
-        return ExecuteRunResponse(
-            success=False, task_id="", operator_name=operator_name,
-            error=f"Invalid JSON: {e}",
-        )
 
     manager = _get_manager(request)
     run = manager.create_run(operator_name)
     run_id = run.run_id
-
-    from agent.db import create_run as db_create_run
 
     try:
         db_create_run(
             run_id,
             operator_name,
             _synthetic_content_hash(operator_name, run_id),
+            task_type="test_execute",
+            parent_task_id=parent_id,
         )
     except Exception as e:
         logger.warning("Failed to insert pipeline_runs row for execute %s: %s", run_id, e)
@@ -88,14 +106,16 @@ async def run_execute(body: ExecuteRunRequest, request: Request) -> ExecuteRunRe
     cases_dir = _cases_dir()
     cases_dir.mkdir(parents=True, exist_ok=True)
     cases_path = cases_dir / f"{operator_name}_cases.json"
-    cases_path.write_text(body.cases_json, encoding="utf-8")
+    cases_path.write_text(cases_json_str, encoding="utf-8")
 
     logger.info(
-        "POST /execute/run: op=%s cases=%d run_id=%s",
-        operator_name, len(cases_data), run_id,
+        "POST /execute/run: op=%s cases=%d run_id=%s source=%s",
+        operator_name, len(cases_data), run_id, "db" if db_cases else "request",
     )
 
-    asyncio.create_task(_run_execute_pipeline(run_id, operator_name, str(cases_path), len(cases_data), manager))
+    asyncio.create_task(
+        _run_execute_pipeline(run_id, operator_name, str(cases_path), len(cases_data), case_ids, manager)
+    )
 
     return ExecuteRunResponse(
         success=True, task_id=run_id, operator_name=operator_name,
@@ -103,7 +123,8 @@ async def run_execute(body: ExecuteRunRequest, request: Request) -> ExecuteRunRe
 
 
 async def _run_execute_pipeline(
-    run_id: str, operator_name: str, cases_path: str, cases_count: int, manager: RuntimeManager,
+    run_id: str, operator_name: str, cases_path: str, cases_count: int,
+    case_ids: list[int], manager: RuntimeManager,
 ) -> None:
     """Run the 3-step execution sub-graph with RuntimeManager observability."""
     ctx = manager.enter_context(run_id)
@@ -152,7 +173,8 @@ async def _run_execute_pipeline(
                 "data": sse["data"],
             })
 
-        from agent.db import complete_run as db_complete_run, save_events as db_save_events
+        from agent.db import complete_run as db_complete_run
+        from agent.db import save_events as db_save_events
 
         try:
             db_save_events(run_id, events_payload)
@@ -162,6 +184,28 @@ async def _run_execute_pipeline(
         exec_result = result.get("exec_result", {})
         error = result.get("error")
         status = "completed" if not error else "failed"
+
+        # Save exec results to exec_results table
+        if not error and case_ids and exec_result:
+            try:
+                from agent.db import save_exec_results as db_save_exec_results
+
+                total = exec_result.get("total", 0)
+                passed = exec_result.get("passed", 0)
+                exec_records = []
+                for i, cid in enumerate(case_ids):
+                    exec_records.append({
+                        "case_id": cid,
+                        "passed": 1 if i < passed else 0,
+                        "cpu_precision_passed": 1,
+                    })
+                db_save_exec_results(
+                    task_id=run_id,
+                    operator_name=operator_name,
+                    results=exec_records,
+                )
+            except Exception as e:
+                logger.warning("Failed to save exec results to DB: %s", e)
 
         try:
             db_complete_run(

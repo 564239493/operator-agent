@@ -64,20 +64,12 @@ def do_save_test_cases(
     source: str = "generated",
     output_dir: str | None = None,
 ) -> dict[str, Any]:
-    """Persist ``cases_json`` to DB and ``cases/{operator_name}_cases.json`` on disk.
+    """Persist ``cases_json`` to disk.
 
-    Args:
-        operator_name: Operator name (e.g. ``aclnnAdaLayerNorm``).
-        cases_json: JSON-serialized list of test case records.
-        source: Provenance label (e.g. ``"generated"``, ``"manual"``).
-        output_dir: Override for the cases directory.  ``None`` → ``cases/``
-            under the project root.
-
-    Returns:
-        Dict with ``saved_count`` and absolute ``output_path``.
+    DB persistence is now handled by the generator route via agent/db.py
+    (save_test_cases writes individual records to the new test_cases table).
+    This MCP tool only writes the JSON file needed by exec_generate_atk.
     """
-    ensure_test_cases_schema()
-
     # Validate that cases_json parses as a list.
     try:
         cases_list = json.loads(cases_json)
@@ -85,17 +77,6 @@ def do_save_test_cases(
         raise ValueError(f"cases_json is not valid JSON: {e}") from e
     if not isinstance(cases_list, list):
         raise ValueError("cases_json must deserialize to a list of test case records")
-
-    # Persist to DB.  Write goes through a short retry loop because the
-    # SQLite file is shared with the main agent process; even with
-    # busy_timeout set on the connection (see mcp_server/db.py), a few
-    # edge cases still surface as "database is locked" — most often on
-    # Windows when an antivirus / fsync step holds the file briefly, or
-    # when the WAL checkpoint runs in parallel with our write.
-    _execute_with_retry(
-        "INSERT INTO test_cases (operator_name, cases_json, source) VALUES (?, ?, ?)",
-        (operator_name, cases_json, source),
-    )
 
     # Persist to disk.
     out_path = _resolve_output_path(operator_name, output_dir)
@@ -116,34 +97,49 @@ def do_save_test_cases(
 
 
 def do_get_test_cases(operator_name: str) -> dict[str, Any] | None:
-    """Return the most recent saved cases for ``operator_name``, or ``None``."""
-    ensure_test_cases_schema()
+    """Return the most recent saved cases for ``operator_name``, or ``None``.
+
+    Reads from the new test_cases table (per-record storage).
+    Falls back to disk file if no DB records found.
+    """
     conn = get_db().conn
-    row = conn.execute(
-        "SELECT cases_json FROM test_cases "
-        "WHERE operator_name = ? ORDER BY id DESC LIMIT 1",
-        (operator_name,),
-    ).fetchone()
-    if row is None:
-        return None
-    return {
-        "operator_name": operator_name,
-        "cases": json.loads(row[0]),
-    }
+    try:
+        rows = conn.execute(
+            "SELECT case_data FROM test_cases "
+            "WHERE operator_name = ? ORDER BY case_index",
+            (operator_name,),
+        ).fetchall()
+        if rows:
+            cases = [json.loads(r[0]) for r in rows]
+            return {"operator_name": operator_name, "cases": cases}
+    except sqlite3.OperationalError:
+        pass
+
+    # Fallback: read from disk
+    out_path = _resolve_output_path(operator_name, None)
+    if out_path.exists():
+        try:
+            cases = json.loads(out_path.read_text(encoding="utf-8"))
+            return {"operator_name": operator_name, "cases": cases}
+        except (json.JSONDecodeError, OSError):
+            pass
+    return None
 
 
 def do_list_test_case_operators() -> list[dict[str, Any]]:
     """Return all operator names that have saved cases, with counts."""
-    ensure_test_cases_schema()
     conn = get_db().conn
-    rows = conn.execute(
-        "SELECT operator_name, COUNT(*) AS n, MAX(created_at) AS last_at "
-        "FROM test_cases GROUP BY operator_name ORDER BY last_at DESC"
-    ).fetchall()
-    return [
-        {"operator_name": r[0], "count": r[1], "last_created_at": r[2]}
-        for r in rows
-    ]
+    try:
+        rows = conn.execute(
+            "SELECT operator_name, COUNT(*) AS n, MAX(created_at) AS last_at "
+            "FROM test_cases GROUP BY operator_name ORDER BY last_at DESC"
+        ).fetchall()
+        return [
+            {"operator_name": r[0], "count": r[1], "last_created_at": r[2]}
+            for r in rows
+        ]
+    except sqlite3.OperationalError:
+        return []
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

@@ -54,6 +54,9 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
     content_hash    TEXT NOT NULL,
     result_json     TEXT,
     error           TEXT,
+    task_type       TEXT,
+    task_name       TEXT,
+    parent_task_id  TEXT REFERENCES pipeline_runs(run_id),
     created_at      TEXT DEFAULT (datetime('now')),
     completed_at    TEXT
 );
@@ -166,3 +169,37 @@ CREATE TABLE IF NOT EXISTS constraints_result (
 
 CREATE INDEX IF NOT EXISTS idx_constraints_result_doc_id
     ON constraints_result(doc_id);
+
+CREATE TABLE IF NOT EXISTS test_cases (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id           TEXT NOT NULL REFERENCES pipeline_runs(run_id),
+    operator_name     TEXT NOT NULL,
+    case_index        INTEGER NOT NULL,
+    case_name         TEXT NOT NULL,
+    case_data         TEXT NOT NULL,
+    constraint_doc_id INTEGER REFERENCES document_versions(id),
+    created_at        TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_test_cases_task ON test_cases(task_id);
+CREATE INDEX IF NOT EXISTS idx_test_cases_operator ON test_cases(operator_name);
+CREATE INDEX IF NOT EXISTS idx_test_cases_constraint_doc ON test_cases(constraint_doc_id);
+
+CREATE TABLE IF NOT EXISTS exec_results (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id             TEXT NOT NULL REFERENCES pipeline_runs(run_id),
+    case_id             INTEGER NOT NULL REFERENCES test_cases(id),
+    operator_name       TEXT NOT NULL,
+    passed              INTEGER NOT NULL,
+    cpu_precision_passed INTEGER,
+    precision_detail    TEXT,
+    actual_json         TEXT,
+    error_message       TEXT,
+    cpu_reference_code  TEXT,
+    duration_ms         INTEGER,
+    created_at          TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_exec_results_task ON exec_results(task_id);
+CREATE INDEX IF NOT EXISTS idx_exec_results_case ON exec_results(case_id);
+CREATE INDEX IF NOT EXISTS idx_exec_results_operator ON exec_results(operator_name);

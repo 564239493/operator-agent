@@ -15,8 +15,14 @@ from fastapi import APIRouter, Request, UploadFile
 
 from agent.db import (
     complete_run as db_complete_run,
+)
+from agent.db import (
     create_run as db_create_run,
+)
+from agent.db import (
     save_events as db_save_events,
+)
+from agent.db import (
     update_run_doc_id as db_update_run_doc_id,
 )
 from agent.graph import create_pipeline_graph_after_init
@@ -51,7 +57,12 @@ async def upload_document(file: UploadFile, request: Request) -> UploadResponse:
 
     manager = _get_manager(request)
     run = manager.create_run(operator_name)
-    db_create_run(run.run_id, operator_name, content_hash)
+    db_create_run(
+        run.run_id,
+        operator_name,
+        content_hash,
+        task_type="constraint_extract",
+    )
 
     asyncio.create_task(_run_pipeline(run.run_id, state_input, manager))
 

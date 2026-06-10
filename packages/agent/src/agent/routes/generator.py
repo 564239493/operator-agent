@@ -106,12 +106,17 @@ async def run_generator(body: GeneratorRunRequest, request: Request) -> Generato
     # "FOREIGN KEY constraint failed" (see git history).  Mirror the
     # pattern in routes/upload.py.
     from agent.db import create_run as db_create_run
+    from agent.db import find_parent_task
+
+    parent_id = find_parent_task(operator_name, "constraint_extract")
 
     try:
         db_create_run(
             run_id,
             operator_name,
             _synthetic_content_hash(operator_name, count, seed, run_id),
+            task_type="case_generate",
+            parent_task_id=parent_id,
         )
     except Exception as e:
         # Don't fail the request just because the bookkeeping row didn't
@@ -125,7 +130,7 @@ async def run_generator(body: GeneratorRunRequest, request: Request) -> Generato
         operator_name, count, seed, run_id,
     )
 
-    asyncio.create_task(_run_case_pipeline(run_id, operator_name, count, seed, manager))
+    asyncio.create_task(_run_case_pipeline(run_id, operator_name, count, seed, parent_id, manager))
 
     return GeneratorRunResponse(
         success=True, task_id=run_id, operator_name=operator_name, count=count,
@@ -133,7 +138,8 @@ async def run_generator(body: GeneratorRunRequest, request: Request) -> Generato
 
 
 async def _run_case_pipeline(
-    run_id: str, operator_name: str, count: int, seed: int, manager: RuntimeManager,
+    run_id: str, operator_name: str, count: int, seed: int,
+    parent_task_id: str | None, manager: RuntimeManager,
 ) -> None:
     """Run the 5-step case-generation sub-graph with RuntimeManager observability."""
     ctx = manager.enter_context(run_id)
@@ -175,7 +181,8 @@ async def _run_case_pipeline(
                 "data": sse["data"],
             })
 
-        from agent.db import complete_run as db_complete_run, save_events as db_save_events
+        from agent.db import complete_run as db_complete_run
+        from agent.db import save_events as db_save_events
 
         try:
             db_save_events(run_id, events_payload)
@@ -184,8 +191,49 @@ async def _run_case_pipeline(
 
         cases_count = result.get("cases_count")
         cases_path = result.get("cases_path", "")
+        cases_list = result.get("cases", [])
         error = result.get("error")
         status = "completed" if not error else "failed"
+
+        logger.info(
+            "generator pipeline result: keys=%s, cases_count=%s, "
+            "cases_list_type=%s, cases_list_len=%d, error=%s",
+            list(result.keys()), cases_count,
+            type(cases_list).__name__, len(cases_list), error,
+        )
+
+        # Save individual case records to test_cases table
+        if not error and cases_list:
+            logger.info("Attempting to save %d cases to test_cases table...", len(cases_list))
+            try:
+                from agent.db import query_run as db_query_run
+                from agent.db import save_test_cases as db_save_test_cases
+
+                constraint_doc_id = None
+                if parent_task_id:
+                    parent_run = db_query_run(parent_task_id)
+                    if parent_run:
+                        constraint_doc_id = parent_run.get("doc_id")
+
+                logger.info(
+                    "save_test_cases params: task_id=%s, operator=%s, "
+                    "cases_len=%d, constraint_doc_id=%s",
+                    run_id, operator_name, len(cases_list), constraint_doc_id,
+                )
+                save_result = db_save_test_cases(
+                    task_id=run_id,
+                    operator_name=operator_name,
+                    cases=cases_list,
+                    constraint_doc_id=constraint_doc_id,
+                )
+                logger.info("Saved test cases to DB: %s", save_result)
+            except Exception as e:
+                logger.exception("Failed to save test cases to DB: %s", e)
+        else:
+            logger.warning(
+                "Skipping test_cases save: error=%s, cases_list_empty=%s",
+                error, not cases_list,
+            )
 
         # ── Mirror upload.py: write the final run row (status +
         # result_json) so the DB reflects what really happened.  Without

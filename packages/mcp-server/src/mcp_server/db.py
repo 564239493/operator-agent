@@ -59,6 +59,14 @@ class Database:
         self._conn.execute("PRAGMA synchronous=NORMAL")  # WAL: safe with NORMAL
         self._conn.execute("PRAGMA busy_timeout=30000")   # wait up to 30s for lock
         self._conn.execute("PRAGMA foreign_keys=ON")
+        # 预迁移：检测旧格式 test_cases 表（有 cases_json 列），删除以便重建新表
+        try:
+            cols = {r[1] for r in self._conn.execute("PRAGMA table_info(test_cases)").fetchall()}
+            if "cases_json" in cols:
+                self._conn.execute("DROP TABLE test_cases")
+                self._conn.commit()
+        except sqlite3.OperationalError:
+            pass
         self._conn.executescript(_load_schema())
         # 迁移：v2 — 新增 is_optional 列
         try:
@@ -409,6 +417,72 @@ class Database:
                         "UPDATE constraints_result SET deterministic_computing = ? WHERE id = ?",
                         (json.dumps(dc, ensure_ascii=False), row_id),
                     )
+        except sqlite3.OperationalError:
+            pass
+        # 迁移：v30 — pipeline_runs 新增 task_type, task_name, parent_task_id 列
+        try:
+            self._conn.execute(
+                "ALTER TABLE pipeline_runs ADD COLUMN task_type TEXT"
+            )
+        except sqlite3.OperationalError:
+            pass
+        try:
+            self._conn.execute(
+                "ALTER TABLE pipeline_runs ADD COLUMN task_name TEXT"
+            )
+        except sqlite3.OperationalError:
+            pass
+        try:
+            self._conn.execute(
+                "ALTER TABLE pipeline_runs ADD COLUMN parent_task_id TEXT REFERENCES pipeline_runs(run_id)"
+            )
+        except sqlite3.OperationalError:
+            pass
+        # 迁移：v31 — 重建 test_cases 表（旧表存 cases_json blob，新表逐条存储）+ 新建 exec_results 表
+        try:
+            existing_cols = {r[1] for r in self._conn.execute("PRAGMA table_info(test_cases)").fetchall()}
+            if "cases_json" in existing_cols:
+                self._conn.execute("DROP TABLE IF EXISTS test_cases")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            self._conn.executescript("""
+                CREATE TABLE IF NOT EXISTS test_cases (
+                    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task_id           TEXT NOT NULL REFERENCES pipeline_runs(run_id),
+                    operator_name     TEXT NOT NULL,
+                    case_index        INTEGER NOT NULL,
+                    case_name         TEXT NOT NULL,
+                    case_data         TEXT NOT NULL,
+                    constraint_doc_id INTEGER REFERENCES document_versions(id),
+                    created_at        TEXT DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_test_cases_task ON test_cases(task_id);
+                CREATE INDEX IF NOT EXISTS idx_test_cases_operator ON test_cases(operator_name);
+                CREATE INDEX IF NOT EXISTS idx_test_cases_constraint_doc ON test_cases(constraint_doc_id);
+            """)
+        except sqlite3.OperationalError:
+            pass
+        try:
+            self._conn.executescript("""
+                CREATE TABLE IF NOT EXISTS exec_results (
+                    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task_id             TEXT NOT NULL REFERENCES pipeline_runs(run_id),
+                    case_id             INTEGER NOT NULL REFERENCES test_cases(id),
+                    operator_name       TEXT NOT NULL,
+                    passed              INTEGER NOT NULL,
+                    cpu_precision_passed INTEGER,
+                    precision_detail    TEXT,
+                    actual_json         TEXT,
+                    error_message       TEXT,
+                    cpu_reference_code  TEXT,
+                    duration_ms         INTEGER,
+                    created_at          TEXT DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_exec_results_task ON exec_results(task_id);
+                CREATE INDEX IF NOT EXISTS idx_exec_results_case ON exec_results(case_id);
+                CREATE INDEX IF NOT EXISTS idx_exec_results_operator ON exec_results(operator_name);
+            """)
         except sqlite3.OperationalError:
             pass
         self._conn.commit()
