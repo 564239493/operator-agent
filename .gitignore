@@ -5,3 +5,8 @@ __pycache__/
 .env
 .idea/
 /uploads/
+/res/
+/data/operator_agent.db
+/data/operator_agent.db-shm
+/data/operator_agent.db-wal
+/data/operator_agent_backup_20260608_105004.db

@@ -87,6 +87,9 @@ EXPR_VERIFY_PROMPT = """\
 ## 参数列表
 {params}
 
+## 参数 shape 信息
+{param_shapes_text}
+
 ## 待验证的表达式
 expr_type: {expr_type}
 expr: {expr}
@@ -98,6 +101,7 @@ expr: {expr}
 4. 边界条件是否正确？（开区间 vs 闭区间）
 5. 广播关系的 expr 是否正确？（允许维度为 1）
 6. expr_type 是否与描述的关系类型匹配？
+7. 维度索引是否正确？（对照"参数 shape 信息"，确认 shape[i] 引用的确实是描述中所指的维度；当参数有多种 shape 形式时，应使用负索引 shape[-N]）
 
 ## 输出
 严格按以下 JSON 返回：
@@ -107,16 +111,59 @@ expr: {expr}
 """
 
 
-def _format_signatures(sigs: list[dict]) -> str:
-    """Build a concise signature text for LLM context."""
+def _format_signatures(sigs: list[dict], params: list[dict] | None = None) -> str:
+    """Build a concise signature text for LLM context, enriched with shape info.
+
+    When params is provided, Tensor parameters are annotated with their
+    shape constraints (e.g. "[shape: (T,N,C)或(T,C)]"), which is critical
+    for the LLM to choose correct dimension indices in expressions.
+    """
     if not sigs:
         return "（无函数签名信息）"
+
+    # Build shape lookup: (function_name, param_name) → shape string
+    shape_map: dict[tuple[str, str], str] = {}
+    if params:
+        for p in params:
+            shape = (p.get("shape", "") or "").strip()
+            if shape:
+                key = (p.get("function_name", ""), p.get("param_name", ""))
+                shape_map[key] = shape
+
     lines: list[str] = []
     for sig in sigs:
         fn = sig.get("function_name", "")
-        params = sig.get("parameters", [])
-        param_strs = [f"{p.get('name', '')}: {p.get('type', '')}" for p in params]
+        sig_params = sig.get("parameters", [])
+        param_strs = []
+        for p in sig_params:
+            name = p.get("name", "")
+            ptype = p.get("type", "")
+            s = f"{name}: {ptype}"
+            shape = shape_map.get((fn, name), "")
+            if shape:
+                s += f" [shape: {shape}]"
+            param_strs.append(s)
         lines.append(f"{fn}({', '.join(param_strs)})")
+    return "\n".join(lines)
+
+
+def _build_param_shapes_text(params: list[dict]) -> str:
+    """Build a compact shape reference table for LLM context.
+
+    Lists each parameter with its shape (if any) so the LLM can choose
+    correct dimension indices (e.g. shape[-1] for the last dim).
+    """
+    if not params:
+        return "（无参数 shape 信息）"
+    lines: list[str] = []
+    for p in params:
+        name = p.get("param_name", "")
+        shape = (p.get("shape", "") or "").strip()
+        ptype = (p.get("param_type", "") or "").strip()
+        if shape:
+            lines.append(f"- {name} ({ptype}): shape = {shape}")
+    if not lines:
+        return "（参数无 shape 信息）"
     return "\n".join(lines)
 
 
@@ -266,11 +313,13 @@ async def _extract_one_with_hint(
     llm: ChatOpenAI,
     rel: dict,
     signatures_text: str,
+    param_shapes_text: str,
     example_hint: str,
 ) -> dict[str, str]:
     """Extract with Few-shot example hint for retry."""
     prompt = RELATION_OBJECT_BUILD_PROMPT.format(
         signatures_text=signatures_text,
+        param_shapes_text=param_shapes_text,
         relation_type=rel.get("relation_type", ""),
         params=json.dumps(rel.get("params", []), ensure_ascii=False),
         description=rel.get("description", ""),
@@ -286,6 +335,7 @@ async def _extract_with_retry(
     llm: ChatOpenAI,
     rel: dict,
     signatures_text: str,
+    param_shapes_text: str,
     sem: asyncio.Semaphore,
 ) -> dict[str, str]:
     """Phase 2a: Extract with enhanced retry (max 2 attempts).
@@ -301,6 +351,7 @@ async def _extract_with_retry(
                 if attempt == 0:
                     prompt = RELATION_OBJECT_BUILD_PROMPT.format(
                         signatures_text=signatures_text,
+                        param_shapes_text=param_shapes_text,
                         relation_type=rel.get("relation_type", ""),
                         params=json.dumps(rel.get("params", []), ensure_ascii=False),
                         description=rel.get("description", ""),
@@ -312,7 +363,7 @@ async def _extract_with_retry(
                 else:
                     example_hint = _select_relevant_example(last_error, last_expr)
                     result = await _extract_one_with_hint(
-                        llm, rel, signatures_text, example_hint,
+                        llm, rel, signatures_text, param_shapes_text, example_hint,
                     )
 
                 expr = result.get("expr", "")
@@ -362,6 +413,7 @@ async def _call_verify_llm(
     llm: ChatOpenAI,
     rel: dict,
     expr_result: dict,
+    param_shapes_text: str,
     sem: asyncio.Semaphore,
 ) -> dict:
     """Phase 2b: Call verification LLM to check semantic correctness."""
@@ -370,6 +422,7 @@ async def _call_verify_llm(
             description=rel.get("description", ""),
             source_citation=rel.get("source_citation", ""),
             params=json.dumps(rel.get("params", []), ensure_ascii=False),
+            param_shapes_text=param_shapes_text,
             expr_type=expr_result.get("expr_type", ""),
             expr=expr_result.get("expr", ""),
         )
@@ -402,6 +455,7 @@ async def _verify_and_fix(
     llm: ChatOpenAI,
     rel: dict,
     expr_result: dict,
+    param_shapes_text: str,
     sem: asyncio.Semaphore,
 ) -> dict[str, str]:
     """Phase 2b: Verify and fix expression with loop-back validation.
@@ -409,7 +463,7 @@ async def _verify_and_fix(
     If verification LLM returns corrected_expr, it must pass Phase 0 again.
     """
     try:
-        verify_result = await _call_verify_llm(llm, rel, expr_result, sem)
+        verify_result = await _call_verify_llm(llm, rel, expr_result, param_shapes_text, sem)
     except Exception:
         logger.warning(
             "BuildParamRelations: semantic verification failed for relation id=%s",
@@ -455,6 +509,7 @@ async def _verify_and_fix(
 async def _batch_extract_relation_objects(
     relations: list[dict],
     signatures_text: str,
+    param_shapes_text: str,
 ) -> list[dict[str, str]]:
     """Batch LLM extraction with three-layer protection.
 
@@ -486,17 +541,17 @@ async def _batch_extract_relation_objects(
 
     async def _process_one(rel: dict) -> dict[str, str]:
         # Phase 1 + 2a: Generate with enhanced retry
-        result = await _extract_with_retry(llm, rel, signatures_text, sem)
+        result = await _extract_with_retry(llm, rel, signatures_text, param_shapes_text, sem)
 
         # Check if semantic verification is needed (Phase 2b)
         confidence = result.get("confidence", "high")
         if confidence == "low" and result.get("expr"):
             # Force semantic verification for low confidence
-            result = await _verify_and_fix(llm, rel, result, sem)
+            result = await _verify_and_fix(llm, rel, result, param_shapes_text, sem)
         # For medium confidence, verification is optional (disabled by default)
         # Uncomment below to enable:
         # elif confidence == "medium" and result.get("expr"):
-        #     result = await _verify_and_fix(llm, rel, result, sem)
+        #     result = await _verify_and_fix(llm, rel, result, param_shapes_text, sem)
 
         return result
 
@@ -527,16 +582,20 @@ async def build_param_relations_node(state: PipelineState) -> dict[str, Any]:
         relations = await _mcp_client.query_param_relations(doc_id)
         sigs = await _mcp_client.query_function_signatures_by_doc_id(doc_id)
         platforms = await _mcp_client.query_platform_support_by_doc_id(doc_id)
+        params = await _mcp_client.query_params_by_doc_id(doc_id)
 
         if not relations:
             logger.info("BuildParamRelations: no relations, skipping")
             return {"error": None}
 
-        # Step 2: Build signature context
-        signatures_text = _format_signatures(sigs)
+        # Step 2: Build signature context (enriched with shape info)
+        signatures_text = _format_signatures(sigs, params or [])
+        param_shapes_text = _build_param_shapes_text(params or [])
 
         # Step 3: LLM batch extract expr_type + expr
-        llm_results = await _batch_extract_relation_objects(relations, signatures_text)
+        llm_results = await _batch_extract_relation_objects(
+            relations, signatures_text, param_shapes_text,
+        )
 
         # Step 4: Assemble relation_object and persist
         updates: list[dict] = []

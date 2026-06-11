@@ -37,14 +37,18 @@ async def save_relations_node(state: RelationExtractState) -> dict[str, Any]:
     # Log coverage report for monitoring
     report = state.get("coverage_report")
     if report:
-        logger.info(
-            "CoverageReport: doc_id=%s coverage=%s uncovered=%s rounds=%d total=%d",
-            doc_id,
-            report.get("coverage", ""),
-            report.get("uncovered_params", []),
-            report.get("total_rounds", 0),
-            report.get("total", 0),
-        )
+        for section, section_report in report.items():
+            if not isinstance(section_report, dict):
+                continue
+            logger.info(
+                "CoverageReport: doc_id=%s section=%s coverage=%s uncovered=%s rounds=%d total=%d",
+                doc_id,
+                section,
+                section_report.get("coverage", ""),
+                section_report.get("uncovered_params", []),
+                section_report.get("total_rounds", 0),
+                section_report.get("total", 0),
+            )
 
     try:
         result = await _mcp_client.save_param_relations(doc_id, merged)

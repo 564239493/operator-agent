@@ -527,6 +527,11 @@ RELATION_OBJECT_BUILD_PROMPT = """\
 12. 不要使用伪代码
 13. 不要在 expr 中使用平台值作为判断条件
 14. 涉及生成器表达式时必须包裹在 all() 或 any() 中，不允许 lambda
+15. 当约束引用了以字母命名的维度（如"C代表类别数"、"T代表序列长度"），
+    且该维度在参数的 shape 描述中始终处于固定语义位置（如"最后一维"），
+    必须使用负索引 shape[-1] 而非固定正索引 shape[1] 或 shape[2]，
+    因为同一参数可能有多种 shape 形式（如"(T,N,C)或(T,C)"），
+    正索引在不同 shape 下指向不同的维度
 
 ## 示例
 
@@ -558,6 +563,9 @@ RELATION_OBJECT_BUILD_PROMPT = """\
 
 ## 函数签名上下文
 {signatures_text}
+
+## 参数 shape 信息
+{param_shapes_text}
 
 ## 输入
 relation_type（粗粒度提示）：{relation_type}
