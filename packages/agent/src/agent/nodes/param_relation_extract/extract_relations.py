@@ -11,6 +11,7 @@ from agent.core.config import settings
 from agent.nodes.param_relation_extract.prompts import (
     RELATION_EXTRACT_PROMPT,
     RELATION_TYPE_DEFINITIONS,
+    format_implicit_params_context,
 )
 from agent.nodes.param_relation_extract.state import RelationExtractState
 
@@ -57,6 +58,7 @@ def _parse_relations_response(text: str) -> list[dict[str, Any]]:
 async def _extract_relations(
     section_content: str,
     llm: ChatOpenAI | None = None,
+    implicit_params: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     if not section_content.strip():
         return []
@@ -66,6 +68,7 @@ async def _extract_relations(
     prompt = RELATION_EXTRACT_PROMPT.format(
         section_content=section_content,
         relation_types=RELATION_TYPE_DEFINITIONS,
+        implicit_params_context=format_implicit_params_context(implicit_params or []),
     )
     response = await llm.ainvoke(prompt)
     text = response.content if hasattr(response, "content") else str(response)
@@ -77,6 +80,7 @@ async def extract_ws_node(state: RelationExtractState) -> dict[str, Any]:
 
     content = state.get("ws_section_content", "")
     param_names = state.get("param_names", [])
+    implicit_params = state.get("implicit_params", [])
     logger.info(
         "ExtractWS-Agent: extracting from %d chars, %d params",
         len(content),
@@ -88,7 +92,9 @@ async def extract_ws_node(state: RelationExtractState) -> dict[str, Any]:
 
     llm = _create_llm()
     try:
-        relations, report = await extract_relations_agent(content, param_names, llm)
+        relations, report = await extract_relations_agent(
+            content, param_names, llm, implicit_params=implicit_params,
+        )
         logger.info(
             "ExtractWS-Agent: %d relations, coverage=%s",
             len(relations),
@@ -109,6 +115,7 @@ async def extract_exe_node(state: RelationExtractState) -> dict[str, Any]:
 
     content = state.get("exe_section_content", "")
     param_names = state.get("param_names", [])
+    implicit_params = state.get("implicit_params", [])
     logger.info(
         "ExtractExe-Agent: extracting from %d chars, %d params",
         len(content),
@@ -120,7 +127,9 @@ async def extract_exe_node(state: RelationExtractState) -> dict[str, Any]:
 
     llm = _create_llm()
     try:
-        relations, report = await extract_relations_agent(content, param_names, llm)
+        relations, report = await extract_relations_agent(
+            content, param_names, llm, implicit_params=implicit_params,
+        )
         logger.info(
             "ExtractExe-Agent: %d relations, coverage=%s",
             len(relations),

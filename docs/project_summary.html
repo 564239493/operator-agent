@@ -107,7 +107,7 @@
 <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
 <div class="layout">
 <nav class="sidebar" id="sidebar">
-  <div class="sidebar-title">Operator Agent<small>项目总览 v2026-06-10</small></div>
+  <div class="sidebar-title">Operator Agent<small>项目总览 v2026-06-11</small></div>
   <ul class="nav-list">
     <li><a class="nav-item" data-target="sec-overview"><span class="arrow empty">&rsaquo;</span>项目定位</a></li>
     <li><a class="nav-item" data-target="sec-techstack"><span class="arrow empty">&rsaquo;</span>技术栈</a></li>
@@ -126,6 +126,7 @@
             <li><a class="nav-item" data-target="sec-node2b"><span class="arrow empty">&rsaquo;</span>节点2b: func_signature</a></li>
             <li><a class="nav-item" data-target="sec-node2c"><span class="arrow empty">&rsaquo;</span>节点2c: func_explanation</a></li>
             <li><a class="nav-item" data-target="sec-node2e"><span class="arrow empty">&rsaquo;</span>节点2d: table_column_extract</a></li>
+            <li><a class="nav-item" data-target="sec-node2f"><span class="arrow empty">&rsaquo;</span>节点2e: implicit_param_extract</a></li>
             <li><a class="nav-item" data-target="sec-node3"><span class="arrow empty">&rsaquo;</span>节点3: llm_description</a></li>
             <li><a class="nav-item" data-target="sec-desc-qa"><span class="arrow empty">&rsaquo;</span>描述完整性保障</a></li>
             <li><a class="nav-item" data-target="sec-node5a"><span class="arrow empty">&rsaquo;</span>节点4a: shape</a></li>
@@ -168,10 +169,10 @@
 <div class="main" id="mainContent">
 <section class="content-section" id="sec-overview">
   <h1>Operator Agent 项目总览</h1>
-  <blockquote>生成日期: 2026-05-28 | 更新日期: 2026-06-10 (verify_and_enhance 实施完成: description_audit 审核记录(DB v35) + LLM 审核增强节点; 测试 426 个) | 基于代码实际状态</blockquote>
+  <blockquote>生成日期: 2026-05-28 | 更新日期: 2026-06-11 (implicit_param_extract 隐式维度变量识别节点实施: 解决 shape 描述中命名维度变量（如 hidden_size）不在函数签名中导致约束表达式丢失问题; Pipeline 20 个节点; 测试 420 个) | 基于代码实际状态</blockquote>
   <h2>项目定位</h2>
   <p>基于 <strong>LangGraph + MCP</strong> 的 CANN 算子文档自动化处理系统。将华为昇腾平台的算子 Markdown 文档解析为结构化数据，经 LLM 提取参数、约束、产品支持信息，最终生成 Python 测试用例。</p>
-  <p><strong>当前完成度</strong>：约 93%，文档解析、数据库层、Pipeline 全部 19 个节点（含 table_column_extract 表格直提节点、llm_description_extract 子图（预过滤 + 属性校验 + verify_and_enhance 审核增强 + is_support_discontinuous 保护）、function_signature 提取（含参数列表生成 + 类型后处理规范化）、function_explanation 提取、shape/dtype/dformat/optional/array_length 提取（含表格直提跳过逻辑）、allowed_range 提取、return_code 提取、determinism 提取、dtype_combo 提取、参数关系提取子图（Agent 迭代循环：分块提取 + 双重覆盖率 + 针对性提取 + 自反思）、build_param_relations 参数关系表达式构建节点（三层防护：AST校验 + Few-shot + 语义验证）、build_param_constraint 参数约束构建节点（含类型规范化 + dimensions rank 解析修复）、assemble_result 汇编节点 + json_constraints 写入）可运行。数据质量问题（dtype key 不匹配、const 限定符污染、符号维度解析错误）已修复。人工审核、测试用例生成尚未实现。</p>
+  <p><strong>当前完成度</strong>：约 93%，文档解析、数据库层、Pipeline 全部 20 个节点（含 table_column_extract 表格直提节点、implicit_param_extract 隐式维度变量识别节点（零 LLM，从原始 HTML 提取不在函数签名中的命名维度变量如 hidden_size）、llm_description_extract 子图（预过滤 + 属性校验 + verify_and_enhance 审核增强 + is_support_discontinuous 保护）、function_signature 提取（含参数列表生成 + 类型后处理规范化）、function_explanation 提取、shape/dtype/dformat/optional/array_length 提取（含表格直提跳过逻辑）、allowed_range 提取、return_code 提取、determinism 提取、dtype_combo 提取、参数关系提取子图（Agent 迭代循环：分块提取 + 双重覆盖率 + 针对性提取 + 自反思 + 隐式维度变量 prompt 增强）、build_param_relations 参数关系表达式构建节点（三层防护：AST校验 + Few-shot + 语义验证）、build_param_constraint 参数约束构建节点（含类型规范化 + dimensions rank 解析修复 + is_operator_param 隐式参数标记）、assemble_result 汇编节点 + json_constraints 写入）可运行。数据质量问题（dtype key 不匹配、const 限定符污染、符号维度解析错误）已修复。人工审核、测试用例生成尚未实现。</p>
 </section>
 <section class="content-section" id="sec-techstack">
 <h1>技术栈</h1>
@@ -230,12 +231,13 @@
 │           │   ├── config.py        # pydantic-settings，双 LLM 提供商切换
 │           │   └── logging.py       # setup_logging + get_logger
 │           ├── nodes/
-│           │   ├── state.py         # PipelineState TypedDict（带 merge_errors reducer）
+│           │   ├── state.py         # PipelineState TypedDict（带 merge_errors reducer + implicit_params 字段）
 │           │   ├── init_doc.py      # 节点1：版本检查 -> 保存 -> 解析
 │           │   ├── product_support.py   # 节点2a（并行）：LLM 提取产品支持表
 │           │   ├── function_signature_extract.py # 节点2b（并行）：LLM 提取函数签名 + 参数列表 + _normalize_param_types + _signatures_to_parameters
 │           │   ├── function_explanation_extract.py # 节点2d（并行）：LLM 提取功能说明摘要
 │           │   ├── table_column_extract.py # 节点2d（顺序）：HTML表格直提 shape/dtype/dformat/is_support_discontinuous（零 LLM，64% 参数 100% 准确）
+│           │   ├── implicit_param_extract.py # 节点2e（顺序）：从原始 HTML 提取隐式维度变量（如 hidden_size），注入 parameters 表（零 LLM）
 │           │   ├── context_utils.py       # 共享工具：extract_param_context（含 HTML &lt;tr&gt; 行边界感知）+ parse_param_table（零 LLM 成本预过滤）
 │           │   ├── llm_description_extract/  # 节点3：LLM描述提取子图（替代原单体 llm_description_extract.py）
 │           │   │   ├── __init__.py      # create_description_extract_subgraph() — 子图定义
@@ -347,7 +349,8 @@ flowchart TD
     H --> TCE["table_column_extract (2d)\nHTML表格直提 shape/dtype/dformat\n/is_support_discontinuous\n零LLM, 100%准确(表格形态64%)"]
     I2 --> TCE
     I3 --> TCE
-    TCE --> LDE["llm_description_extract (3)\n子图：fetch → [extract_ws∥extract_exe]\n→ validate → verify_and_enhance → save\n预过滤上下文 + 属性检查清单\n+ LLM审核增强(description_audit)\n(表格参数保留已直提的is_support_discontinuous)"]
+    TCE --> IPE["implicit_param_extract (2e)\n从原始HTML提取隐式维度变量\n(hidden_size/input_size等)\n注入parameters表, 零LLM"]
+    IPE --> LDE["llm_description_extract (3)\n子图：fetch → [extract_ws∥extract_exe]\n→ validate → verify_and_enhance → save\n预过滤上下文 + 属性检查清单\n+ LLM审核增强(description_audit)\n(表格参数保留已直提的is_support_discontinuous)"]
     LDE --> L["shape_extract (4a)\nLLM 提取 shape"]
     LDE --> M["dtype_extract (4b)\nLLM 提取 dtype"]
     LDE --> N["dformat_extract (4c)\nLLM 提取数据格式"]
@@ -381,6 +384,7 @@ flowchart TD
     style I2 fill:#ebf8ff,stroke:#3182ce
     style I3 fill:#ebf8ff,stroke:#3182ce
     style TCE fill:#dcffe4,stroke:#38a169,color:#22543d
+    style IPE fill:#e6ffed,stroke:#2f855a,color:#22543d
     style LDE fill:#faf5ff,stroke:#805ad5
     style L fill:#ebf8ff,stroke:#3182ce
     style M fill:#ebf8ff,stroke:#3182ce
@@ -531,7 +535,7 @@ flowchart TD
 <h3>数据流 &amp; 依赖关系</h3>
 <div class="io-row"><span class="io-label">上游节点</span><span class="io-val"><span class="io-tag">product_support (2a)</span> <span class="io-tag">function_signature_extract (2b)</span> <span class="io-tag">function_explanation_extract (2c)</span> — 等待三者全部完成</span></div>
 <div class="io-row"><span class="io-label">同级节点</span><span class="io-val">无（独占顺序执行）</span></div>
-<div class="io-row"><span class="io-label">下游节点</span><span class="io-val"><span class="io-tag io-tag-down">llm_description_extract (节点3)</span></span></div>
+<div class="io-row"><span class="io-label">下游节点</span><span class="io-val"><span class="io-tag io-tag-down">implicit_param_extract (节点2e)</span></span></div>
 <div class="io-row"><span class="io-label">State 输入</span><span class="io-val"><code>doc_id</code>, <code>parameters</code>（来自节点2b，含 function_name/param_name/param_type）</span></div>
 <div class="io-row"><span class="io-label">MCP 读取</span><span class="io-val"><code>get_section("params_get_workspace")</code>, <code>get_section("params_execute")</code>, <code>get_section("constraints")</code></span></div>
 <div class="io-row"><span class="io-label">State 输出</span><span class="io-val"><code>parameters</code>（追加 shape, dtype_desc, dformat_desc, is_support_discontinuous, param_desc, direction）, <code>error</code></span></div>
@@ -588,11 +592,94 @@ flowchart TD
 
 
 </section>
-<section class="content-section" id="sec-node3">
-<h1>节点3: llm_description_extract 子图（顺序执行，等待 table_column_extract 完成）</h1>
+<section class="content-section" id="sec-node2f">
+<h1>节点2e: implicit_param_extract_node（顺序执行，等待 table_column_extract 完成）</h1>
 <div class="node-io">
 <h3>数据流 &amp; 依赖关系</h3>
 <div class="io-row"><span class="io-label">上游节点</span><span class="io-val"><span class="io-tag">table_column_extract (节点2d)</span>（等待其完成）</span></div>
+<div class="io-row"><span class="io-label">同级节点</span><span class="io-val">无（独占顺序执行）</span></div>
+<div class="io-row"><span class="io-label">下游节点</span><span class="io-val"><span class="io-tag io-tag-down">llm_description_extract (节点3)</span></span></div>
+<div class="io-row"><span class="io-label">State 输入</span><span class="io-val"><code>doc_id</code>, <code>operator_name</code></span></div>
+<div class="io-row"><span class="io-label">MCP 读取</span><span class="io-val"><code>get_section("params_get_workspace")</code>, <code>get_section("params_execute")</code>, <code>query_function_signatures_by_doc_id</code></span></div>
+<div class="io-row"><span class="io-label">State 输出</span><span class="io-val"><code>implicit_params</code>（隐式维度变量列表，通过 state 传递给 param_relation_extract 子图）</span></div>
+<div class="io-row"><span class="io-label">DB 写入</span><span class="io-val"><code>parameters</code> (INSERT OR REPLACE: function_name, param_name, param_type=int64_t, direction=input, shape=标量, data_type=INT)</span></div>
+<div class="io-row"><span class="io-label">特殊说明</span><span class="io-val"><strong>零 LLM 调用</strong>。纯正则匹配。不修改 <code>state["parameters"]</code>，避免下游 llm_description_extract 为隐式参数发起无意义 LLM 调用</span></div>
+</div>
+
+<p><strong>解决问题</strong>：算子文档的 shape 描述中包含命名维度变量（如 <code>hidden_size</code>、<code>input_size</code>、<code>time_step</code>），这些变量不出现在任何函数签名中，但在多个参数的 shape 约束中被引用。当前管道中 LLM 生成的约束表达式引用这些"幽灵变量"时，AST 校验失败导致 expr 被清空，约束丢失。</p>
+<p><strong>触发条件</strong>：table_column_extract 完成后、llm_description_extract 之前执行。</p>
+<p><strong>流程</strong>：</p>
+<div class="flow-chart">implicit_param_extract_node(state)
+  │
+  ├─ MCP: get_section(doc_id, "params_get_workspace")
+  │       get_section(doc_id, "params_execute")
+  │    └─ 拼接原始 HTML section 文本
+  │
+  ├─ MCP: query_function_signatures_by_doc_id(doc_id)
+  │    └─ 获取所有函数签名中的参数名（含 camelCase → snake_case 变体）
+  │
+  ├─ 正则扫描 shape 元组：
+  │    └─ _SHAPE_TUPLE_RE: 匹配 （time_step, batch_size, hidden_size）等
+  │    └─ _DIM_VAR_RE: 提取 snake_case 命名变量
+  │    └─ 排除 _EXCLUDE_WORDS（true/false/shape/dtype 等）
+  │    └─ 排除已存在于函数签名中的参数名
+  │
+  ├─ 识别隐式维度变量：
+  │    └─ dim_var_usage: var_name → set(nearby param names)
+  │    └─ _find_nearby_param_name: 从 HTML &lt;tr&gt; 行首列提取所属参数名
+  │
+  ├─ 构建隐式参数记录：
+  │    └─ {function_name: GetWorkspaceSize函数名, param_name: var_name,
+  │        param_type: "int64_t", direction: "input",
+  │        shape: "标量", data_type: "INT", data_format: ""}
+  │
+  ├─ MCP: save_parameters(doc_id, implicit_params)
+  │    └─ INSERT OR REPLACE（幂等，不覆盖已有参数）
+  │
+  └─ 返回 {"implicit_params": [...], "error": None}
+       └─ 不修改 state["parameters"]</div>
+
+<p><strong>输出状态</strong>：<code>implicit_params: list[dict]</code>, <code>error</code></p>
+
+<h2>与 param_relation_extract 的协作</h2>
+<p>隐式参数通过<strong>两条路径</strong>提升 param_relation_extract 的准确性：</p>
+<table>
+<thead><tr><th>路径</th><th>机制</th><th>影响范围</th></tr></thead>
+<tbody>
+<tr><td><strong>A（DB 间接）</strong></td><td>隐式参数写入 DB → fetch_sections_node 查询 param_names 时包含</td><td>Round 2 覆盖率检测 + Round 3 定向提取</td></tr>
+<tr><td><strong>B（State 显式）</strong></td><td><code>implicit_params</code> 通过 PipelineState → RelationExtractState 传入子图 → 注入 RELATION_EXTRACT_PROMPT 的 <code>{implicit_params_context}</code></td><td>Round 1 LLM 提取（LLM 知道 hidden_size 应视为正式参数）</td></tr>
+</tbody>
+</table>
+<p>Prompt 增强段落示例：</p>
+<pre><code>## 隐式维度变量（非函数签名参数，但在 shape 描述中作为命名维度使用）
+以下标识符虽然不是函数签名中的参数，但它们是重要的维度变量，
+在 shape 描述中以命名形式出现。请将它们视为正式参数，
+并在涉及它们的约束关系中将其列入 params 列表：
+- hidden_size（int64_t）：隐式维度变量
+- input_size（int64_t）：隐式维度变量</code></pre>
+
+<h2>核心设计约束</h2>
+<ul>
+<li><strong>不修改 state["parameters"]</strong>：避免 llm_description_extract 子图遍历 state["parameters"] 时为隐式参数发起无意义 LLM 调用</li>
+<li><strong>零 LLM 调用</strong>：纯正则匹配 + 确定性过滤</li>
+<li><strong>幂等注入</strong>：save_parameters 使用 INSERT OR REPLACE（UNIQUE 约束: doc_id + function_name + param_name）</li>
+<li><strong>camelCase → snake_case 映射</strong>：numLayers → num_layers，确保签名参数不被误识别为隐式变量</li>
+</ul>
+
+<h2>下游影响</h2>
+<ul>
+<li><strong>build_param_constraint</strong>：构建 <code>all_sig_param_names</code>（所有函数签名参数），不在其中的参数标记为 <code>is_operator_param: true</code></li>
+<li><strong>assemble_result</strong>：隐式参数 function_name 以 GetWorkspaceSize 结尾、param_name 不在排除集 → 自动包含在 inputs JSON 中</li>
+<li><strong>build_param_relations</strong>：relations 的 params 列表已含隐式变量 → AST 校验 _validate_expr_refs 通过</li>
+</ul>
+
+
+</section>
+<section class="content-section" id="sec-node3">
+<h1>节点3: llm_description_extract 子图（顺序执行，等待 implicit_param_extract 完成）</h1>
+<div class="node-io">
+<h3>数据流 &amp; 依赖关系</h3>
+<div class="io-row"><span class="io-label">上游节点</span><span class="io-val"><span class="io-tag">implicit_param_extract (节点2e)</span>（等待其完成）</span></div>
 <div class="io-row"><span class="io-label">同级节点</span><span class="io-val">无（独占顺序执行）</span></div>
 <div class="io-row"><span class="io-label">下游节点</span><span class="io-val"><span class="io-tag io-tag-down">shape (4a)</span> <span class="io-tag io-tag-down">dtype (4b)</span> <span class="io-tag io-tag-down">dformat (4c)</span> <span class="io-tag io-tag-down">optional (4d)</span> <span class="io-tag io-tag-down">param_relation (4e)</span> <span class="io-tag io-tag-down">array_length (4g)</span> <span class="io-tag io-tag-down">allowed_range (4h)</span> <span class="io-tag io-tag-down">return_codes (4i)</span> <span class="io-tag io-tag-down">determinism (4j)</span> <span class="io-tag io-tag-down">dtype_combo (4k)</span> — 10个节点并行扇出</span></div>
 <div class="io-row"><span class="io-label">State 输入</span><span class="io-val"><code>doc_id</code>, <code>parameters</code>（来自节点2b，含 function_name/param_name/param_type）</span></div>
@@ -872,11 +959,11 @@ flowchart TD
 <div class="io-row"><span class="io-label">上游节点</span><span class="io-val"><span class="io-tag">llm_description_extract (节点3)</span></span></div>
 <div class="io-row"><span class="io-label">同级节点</span><span class="io-val"><span class="io-tag io-tag-sib">4a~4d、4g~4k</span> — 10个节点并行（当前为 4e param_relation）</span></div>
 <div class="io-row"><span class="io-label">下游节点</span><span class="io-val"><span class="io-tag io-tag-down">build_param_relations (节点5.5r)</span></span></div>
-<div class="io-row"><span class="io-label">State 输入</span><span class="io-val"><code>doc_id</code>, <code>parameters</code>（来自节点4）</span></div>
+<div class="io-row"><span class="io-label">State 输入</span><span class="io-val"><code>doc_id</code>, <code>implicit_params</code>（来自节点2e，隐式维度变量列表）</span></div>
 <div class="io-row"><span class="io-label">MCP 读取</span><span class="io-val"><code>get_section("params_get_workspace")</code>, <code>get_section("params_execute")</code>, <code>get_section("constraints")</code></span></div>
 <div class="io-row"><span class="io-label">State 输出</span><span class="io-val"><code>error</code></span></div>
 <div class="io-row"><span class="io-label">DB 写入</span><span class="io-val"><code>param_relations</code> (DELETE + INSERT: relation_type, platform, description, params, param_optional, source_citation)</span></div>
-<div class="io-row"><span class="io-label">特殊说明</span><span class="io-val">本节点为 LangGraph 子图（5个子节点），内部通过 MCP 获取章节后由 LLM 提取关系，不依赖 state.parameters 中的 description</span></div>
+<div class="io-row"><span class="io-label">特殊说明</span><span class="io-val">本节点为 LangGraph 子图（5个子节点），内部通过 MCP 获取章节后由 LLM 提取关系。接收 <code>implicit_params</code> 注入 Round 1 prompt，提升隐式维度变量的提取准确性</span></div>
 </div>
 
 <p><strong>触发条件</strong>：llm_description_extract 完成后，与 shape/dtype/dformat/optional/array_length/allowed_range/return_codes/determinism/dtype_combo <strong>同时启动</strong>。</p>
@@ -1012,7 +1099,7 @@ flowchart TD
 <p><code>SELF_CHECK_PROMPT</code> 将所有已提取关系的摘要（description 前 50 字符 + source_citation 前 40 字符）与完整文档一起交给 LLM，要求对比检查遗漏。最多执行 2 轮，单轮无新增即 break。</p>
 
 <h2>param_names 数据流</h2>
-<p><code>RelationExtractState</code> 新增 <code>param_names: list[str]</code> 字段。<code>fetch_sections_node</code> 通过 <code>query_params_by_doc_id</code> 获取参数列表，排除公共参数（workspace / workspaceSize / executor / stream），供 Agent 循环用于覆盖率计算。</p>
+<p><code>RelationExtractState</code> 包含 <code>param_names: list[str]</code> 和 <code>implicit_params: list[dict]</code> 字段。<code>fetch_sections_node</code> 通过 <code>query_params_by_doc_id</code> 获取参数列表，排除公共参数（workspace / workspaceSize / executor / stream），供 Agent 循环用于覆盖率计算。<code>implicit_params</code> 从 PipelineState 自动映射到子图 state，传递给 extract 节点注入 Round 1 prompt。</p>
 
 <h2>防护机制</h2>
 <table>
@@ -1055,9 +1142,9 @@ flowchart TD
 <tr><td><code>param_relation_extract/self_check.py</code></td><td>新增</td><td>FOCUSED/PARAGRAPH/SELF_CHECK Prompt + 提取函数</td></tr>
 <tr><td><code>param_relation_extract/agent_loop.py</code></td><td>新增</td><td>extract_relations_agent 主控 + _cleanup + 超时兜底</td></tr>
 <tr><td><code>param_relation_extract/extract_relations.py</code></td><td>改</td><td>Agent node 替换 + _extract_relations 接受 llm 参数</td></tr>
-<tr><td><code>param_relation_extract/prompts.py</code></td><td>改</td><td>提取 RELATION_TYPE_DEFINITIONS 常量</td></tr>
-<tr><td><code>param_relation_extract/state.py</code></td><td>改</td><td>+param_names, +coverage_report（含 merge reducer）</td></tr>
-<tr><td><code>param_relation_extract/fetch_sections.py</code></td><td>改</td><td>+query_params_by_doc_id（排除公共参数）</td></tr>
+<tr><td><code>param_relation_extract/prompts.py</code></td><td>改</td><td>提取 RELATION_TYPE_DEFINITIONS 常量 + 新增 format_implicit_params_context()</td></tr>
+<tr><td><code>param_relation_extract/state.py</code></td><td>改</td><td>+param_names, +implicit_params, +coverage_report（含 merge reducer）</td></tr>
+<tr><td><code>param_relation_extract/fetch_sections.py</code></td><td>改</td><td>+query_params_by_doc_id（排除公共参数）+ 传递 implicit_params</td></tr>
 <tr><td><code>context_utils.py</code></td><td>改</td><td>+HTML &lt;tr&gt; 行边界感知（Phase 1.5）</td></tr>
 </tbody>
 </table>
@@ -1485,6 +1572,8 @@ expr="" (标记 _validation_error)  Phase 2b 触发判断
   ├─ Step 2: 构建索引
   │    ├─ sig_type_map: (function_name, param_name) → type
   │    ├─ operator_params: 非 GetWorkspaceSize 函数中的参数名集合
+  │    ├─ all_sig_param_names: 所有函数签名中的参数名集合（用于识别隐式参数）
+  │    ├─ implicit_param_names: 在 parameters 表中但不在任何函数签名中的参数
   │    ├─ dtype_by_platform: platform → param_name → dtype set
   │    └─ supported_platforms: 已支持平台名称列表
   │
@@ -1529,6 +1618,7 @@ expr="" (标记 _validation_error)  Phase 2b 触发判断
        └─ 批量 UPDATE parameters.param_constraint 列</div>
 <p><strong>输出状态</strong>：<code>error</code></p>
 <p><strong>存储格式</strong>：<code>parameters.param_constraint TEXT NOT NULL DEFAULT '{}'</code>，JSON 对象按平台名为 key，值为包含 description/type/format/is_optional/is_support_discontinuous/is_operator_param/dimensions/array_length/dtype/allowed_range_value 的完整约束数据。</p>
+<p><strong>is_operator_param 语义（2026-06-11 更新）</strong>：预留字段，当前用于标记隐式维度变量。构建 <code>all_sig_param_names</code>（所有函数签名中的参数名），不在其中的参数标记为 <code>is_operator_param: true</code>（即隐式维度变量，如 hidden_size、input_size），其余为 <code>false</code>。</p>
 
 
 </section>
@@ -1621,27 +1711,28 @@ gantt
 
     section 顺序
     table_column_extract (HTML表格直提, 零LLM) :3, 4
-    llm_description_extract (子图: fetch→[ws∥exe]→validate→save) :4, 5
+    implicit_param_extract (隐式维度变量识别, 零LLM) :4, 5
+    llm_description_extract (子图: fetch→[ws∥exe]→validate→save) :5, 6
 
     section 并行 4a~4k
-    shape_extract (逐参数提取 shape) :5, 7
-    dtype_extract (逐参数提取 dtype) :5, 7
-    dformat_extract (逐参数提取数据格式) :5, 7
-    optional_extract (逐参数判断可选) :5, 7
-    array_length_extract (LLM提取数组长度) :5, 7
-    allowed_range_extract (LLM提取取值范围约束) :5, 7
-    return_code_extract (LLM提取返回码/错误码) :5, 7
-    determinism_extract (LLM提取确定性计算信息) :5, 7
-    dtype_combo_extract (LLM提取数据类型组合) :5, 7
-    param_relation_extract (子图: 提取参数耦合关系) :5, 7
+    shape_extract (逐参数提取 shape) :6, 8
+    dtype_extract (逐参数提取 dtype) :6, 8
+    dformat_extract (逐参数提取数据格式) :6, 8
+    optional_extract (逐参数判断可选) :6, 8
+    array_length_extract (LLM提取数组长度) :6, 8
+    allowed_range_extract (LLM提取取值范围约束) :6, 8
+    return_code_extract (LLM提取返回码/错误码) :6, 8
+    determinism_extract (LLM提取确定性计算信息) :6, 8
+    dtype_combo_extract (LLM提取数据类型组合) :6, 8
+    param_relation_extract (子图: 提取参数耦合关系) :6, 8
 
     section 顺序
-    build_param_relations (LLM提取参数关系表达式) :8, 9
-    build_param_constraint (LLM构建param_constraint JSON) :9, 10
-    assemble_result (汇编结果→constraints_result+json_constraints) :10, 11
+    build_param_relations (LLM提取参数关系表达式) :9, 10
+    build_param_constraint (LLM构建param_constraint JSON) :10, 11
+    assemble_result (汇编结果→constraints_result+json_constraints) :11, 12
 </pre>
 
-<p><strong>MCP 通信模式</strong>：每个节点每次调用 MCP 工具时，<code>MCPClient._call_tool()</code> 会<strong>启动一个新的 MCP Server 子进程</strong>（<code>async with stdio_client</code>），调用完成后进程退出。整个 Pipeline 执行一次约产生 ~55 次子进程启动（llm_description_extract 子图额外增加 5~7 次 [fetch + N 个参数的 update]，table_column_extract 额外增加 4~7 次 [3 个 get_section + 4 个 batch update]，param_relation_extract 子图额外增加 3~5 次，allowed_range_extract 额外增加 3~6 次，return_code_extract 额外增加 3~6 次，determinism_extract 额外增加 2~3 次，dtype_combo_extract 额外增加 2~3 次，build_param_relations 额外增加 3~5 次，build_param_constraint 额外增加 5~8 次，assemble_result 额外增加 10 次）。参数列表在 <code>function_signature_extract</code> 中创建，<code>table_column_extract</code> 直提表格值后，<code>llm_description_extract</code> 充实描述字段并通过 state 传递给下游，避免重复 MCP 查询。</p>
+<p><strong>MCP 通信模式</strong>：每个节点每次调用 MCP 工具时，<code>MCPClient._call_tool()</code> 会<strong>启动一个新的 MCP Server 子进程</strong>（<code>async with stdio_client</code>），调用完成后进程退出。整个 Pipeline 执行一次约产生 ~58 次子进程启动（llm_description_extract 子图额外增加 5~7 次 [fetch + N 个参数的 update]，table_column_extract 额外增加 4~7 次 [3 个 get_section + 4 个 batch update]，implicit_param_extract 额外增加 3 次 [2 个 get_section + 1 个 query_function_signatures + 1 个 save_parameters]，param_relation_extract 子图额外增加 3~5 次，allowed_range_extract 额外增加 3~6 次，return_code_extract 额外增加 3~6 次，determinism_extract 额外增加 2~3 次，dtype_combo_extract 额外增加 2~3 次，build_param_relations 额外增加 3~5 次，build_param_constraint 额外增加 5~8 次，assemble_result 额外增加 10 次）。参数列表在 <code>function_signature_extract</code> 中创建，<code>table_column_extract</code> 直提表格值后，<code>implicit_param_extract</code> 注入隐式维度变量，<code>llm_description_extract</code> 充实描述字段并通过 state 传递给下游，避免重复 MCP 查询。</p>
 
 
 </section>

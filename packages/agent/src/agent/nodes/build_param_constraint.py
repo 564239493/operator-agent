@@ -64,11 +64,20 @@ async def build_param_constraint_node(state: PipelineState) -> dict[str, Any]:
         # Step 2: Build indexes
         sig_type_map: dict[tuple[str, str], str] = {}
         operator_params: set[str] = set()
+        all_sig_param_names: set[str] = set()
         for sig in sigs:
             for p in sig.get("parameters", []):
                 sig_type_map[(sig["function_name"], p["name"])] = p.get("type", "")
+                all_sig_param_names.add(p["name"])
                 if not sig["function_name"].endswith("GetWorkspaceSize"):
                     operator_params.add(p["name"])
+
+        # Implicit params: present in parameters table but not in any function signature
+        implicit_param_names: set[str] = {
+            p["param_name"]
+            for p in params
+            if p["param_name"] not in all_sig_param_names
+        }
 
         dtype_by_platform: dict[str, dict[str, set[str]]] = {}
         for combo in dtype_combos:
@@ -102,6 +111,32 @@ async def build_param_constraint_node(state: PipelineState) -> dict[str, Any]:
             non_tensor_params, constraints_text
         )
 
+        # Step 4b: Narrow bool allowed_range_value using existing constraints
+        #
+        # build_single_param_constraint may have produced constraints like
+        # ``batchFirst.range_value == False``.  When such a constraint exists
+        # for a bool parameter, we narrow the default [True, False] to the
+        # single constrained value (e.g. [False]).
+        bool_params = [
+            p for p in non_tensor_params
+            if _is_bool_type(p.get("param_type", ""))
+        ]
+        if bool_params:
+            try:
+                relations = await _mcp_client.query_param_relations(doc_id)
+                narrowed = _narrow_bool_allowed_range(ar_map, relations, bool_params)
+                if narrowed:
+                    logger.info(
+                        "BuildParamConstraint: narrowed bool allowed_range for %d params "
+                        "based on existing constraints",
+                        narrowed,
+                    )
+            except Exception:
+                logger.warning(
+                    "BuildParamConstraint: failed to narrow bool ranges from relations",
+                    exc_info=True,
+                )
+
         # Step 5: Assemble constraint JSON for each parameter
         updates: list[dict] = []
         for param in params:
@@ -131,13 +166,16 @@ async def build_param_constraint_node(state: PipelineState) -> dict[str, Any]:
                             if d.strip()
                         })
 
-                # format: non-Tensor → "N/A", Tensor → array (empty or split by "/")
+                # format: non-Tensor → "N/A", Tensor → array (split by 、，,/)
                 is_tensor = "aclTensor" in ptype
                 if not is_tensor:
                     fmt: list | str = "N/A"
                 else:
                     fmt_str = param.get("data_format", "") or ""
-                    fmt = [f.strip() for f in fmt_str.split("/") if f.strip()]
+                    fmt = sorted({
+                        f.strip() for f in re.split(r"[、，,/]", fmt_str)
+                        if f.strip()
+                    })
 
                 # is_support_discontinuous: JSON parse
                 disc_raw = param.get("is_support_discontinuous", "") or ""
@@ -163,7 +201,7 @@ async def build_param_constraint_node(state: PipelineState) -> dict[str, Any]:
                     "is_optional": {"value": bool(param.get("is_optional")), "src_text": ""},
                     "is_support_discontinuous": disc,
                     "is_operator_param": {
-                        "value": pname in operator_params,
+                        "value": pname in implicit_param_names,
                         "src_text": "",
                     },
                     "dimensions": {"value": dimensions_value, "src_text": shape_raw},
@@ -207,6 +245,81 @@ def _normalize_type(ptype: str) -> str:
     ptype = re.sub(r'\bconst\b', '', ptype)
     ptype = ptype.replace('*', '').replace('&', '').strip()
     return ptype
+
+
+# ---------------------------------------------------------------------------
+# Step 4b: Narrow bool allowed_range_value from existing constraints
+# ---------------------------------------------------------------------------
+
+# Matches:  param_name.range_value == True  /  param_name.range_value == False
+_BOOL_RANGE_RE = re.compile(
+    r"\b(\w+)\.range_value\s*==\s*(True|False)\b"
+)
+
+
+def _narrow_bool_allowed_range(
+    ar_map: dict[tuple[str, str], list],
+    relations: list[dict],
+    bool_params: list[dict],
+) -> int:
+    """Narrow bool [True, False] allowed range using existing single-param
+    constraints that pin the value to True or False.
+
+    Scans all relations for expressions of the form
+    ``<param>.range_value == <True|False>`` and, when found, replaces the
+    default ``[True, False]`` in *ar_map* with the single constrained value.
+
+    Args:
+        ar_map: Mutable map of (function_name, param_name) → allowed values.
+            Modified **in place**.
+        relations: Existing param_relations from DB (produced by
+            ``build_single_param_constraint``).
+        bool_params: List of bool parameter dicts (must have
+            ``function_name`` and ``param_name`` keys).
+
+    Returns:
+        Number of parameters whose allowed range was narrowed.
+    """
+    if not relations or not bool_params:
+        return 0
+
+    # Build lookup: (function_name, param_name) → constrained bool value
+    constrained: dict[tuple[str, str], bool] = {}
+
+    for rel in relations:
+        obj = rel.get("relation_object", {})
+        if isinstance(obj, str):
+            try:
+                obj = json.loads(obj)
+            except (json.JSONDecodeError, TypeError):
+                continue
+        expr = obj.get("expr", "") or ""
+        if not expr:
+            continue
+
+        fn = rel.get("function_name", "")
+        for m in _BOOL_RANGE_RE.finditer(expr):
+            pname = m.group(1)
+            val = m.group(2) == "True"
+            constrained[(fn, pname)] = val
+
+    if not constrained:
+        return 0
+
+    narrowed = 0
+    for p in bool_params:
+        fn = p.get("function_name", "")
+        pname = p.get("param_name", "")
+        key = (fn, pname)
+        if key in constrained and ar_map.get(key) == [True, False]:
+            ar_map[key] = [constrained[key]]
+            narrowed += 1
+            logger.debug(
+                "BuildParamConstraint: narrowed %s.%s allowed_range to [%s]",
+                fn, pname, constrained[key],
+            )
+
+    return narrowed
 
 
 # ---------------------------------------------------------------------------

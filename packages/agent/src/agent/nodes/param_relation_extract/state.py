@@ -27,6 +27,7 @@ class RelationExtractState(TypedDict, total=False):
     ws_section_content: str
     exe_section_content: str
     param_names: list[str]
+    implicit_params: list[dict[str, Any]]
     ws_relations: list[dict[str, Any]]
     exe_relations: list[dict[str, Any]]
     merged_relations: list[dict[str, Any]]

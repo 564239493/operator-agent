@@ -10,3 +10,5 @@ __pycache__/
 /data/operator_agent.db-shm
 /data/operator_agent.db-wal
 /data/operator_agent_backup_20260608_105004.db
+/docs/res/
+/operators/checklist/

@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     expr_max_retries: int = Field(default=2, ge=0, le=10)
     dimensions_max_retries: int = Field(default=2, ge=0, le=10)
 
+    # Layer 2 LLM switch for single-parameter constraint extraction.
+    # When False (default), only Layer 1 deterministic regex rules run.
+    enable_single_param_llm: bool = False
+
     # Master switch: which LLM provider to use
     llm_provider: LLMProvider = LLMProvider.ZAI
 

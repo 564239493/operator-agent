@@ -44,6 +44,16 @@ async def assemble_result_node(state: PipelineState) -> dict[str, Any]:
         return_codes = await _mcp_client.query_return_codes_by_doc_id(doc_id)
         dtype_combos = await _mcp_client.query_dtype_combos_by_doc_id(doc_id)
 
+        # Log single-param vs multi-param relation breakdown
+        single_count = sum(
+            1 for r in relations
+            if r.get("relation_type") == "self_constraint"
+        )
+        logger.info(
+            "assemble_result: %d total relations (%d single-param, %d multi-param)",
+            len(relations), single_count, len(relations) - single_count,
+        )
+
         # Step 2b: Fetch function_explanation_summary from document_versions
         fn_expl_summary = await _mcp_client.get_function_explanation_summary(doc_id)
         description = fn_expl_summary.get("description", "")

@@ -45,7 +45,15 @@ async def upload_document(file: UploadFile) -> UploadResponse:
         pipeline_error = result.get("error")
         if pipeline_error:
             logger.warning("Pipeline completed with error: %s", pipeline_error)
-            return UploadResponse(success=False, error=pipeline_error)
+            return UploadResponse(
+                success=False,
+                error=pipeline_error,
+                operator_name=result.get("operator_name") or operator_name,
+                cann_version=result.get("cann_version"),
+                status=result.get("status"),
+                version=result.get("version"),
+                sections_count=len(result.get("sections", [])) or None,
+            )
 
         return UploadResponse(
             success=True,

@@ -602,6 +602,13 @@ def update_llm_descriptions(doc_id: int, updates: list[dict]) -> dict:
     conn = db.conn
     count = 0
     for u in updates:
+        # Serialize description_audit to JSON string if it's a dict/list.
+        # Without this, SQLite would receive a Python dict and raise
+        # InterfaceError for unsupported types.
+        audit = u.get("description_audit", "")
+        if isinstance(audit, (dict, list)):
+            audit = json.dumps(audit, ensure_ascii=False)
+
         cursor = conn.execute(
             "UPDATE parameters SET llm_description = ?, src_content = ?, "
             "direction = ?, is_support_discontinuous = ?, "
@@ -612,7 +619,7 @@ def update_llm_descriptions(doc_id: int, updates: list[dict]) -> dict:
                 u.get("src_content", ""),
                 u.get("direction", ""),
                 u.get("is_support_discontinuous", '{"value":"N/A","src_text":""}'),
-                u.get("description_audit", ""),
+                audit,
                 doc_id,
                 u.get("function_name", ""),
                 u.get("param_name", ""),

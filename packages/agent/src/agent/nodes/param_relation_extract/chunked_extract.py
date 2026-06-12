@@ -194,6 +194,7 @@ def split_into_chunks(section_text: str) -> list[str]:
 async def extract_relations_chunked(
     section_content: str,
     llm: ChatOpenAI,
+    implicit_params: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Round 1: extract relations from each chunk independently."""
     chunks = split_into_chunks(section_content)
@@ -203,7 +204,7 @@ async def extract_relations_chunked(
         if not chunk.strip():
             continue
         try:
-            relations = await _extract_relations(chunk, llm)
+            relations = await _extract_relations(chunk, llm, implicit_params)
         except Exception:
             logger.warning("Chunk %d/%d extraction failed, skipping", i + 1, len(chunks))
             continue

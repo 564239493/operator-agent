@@ -30,13 +30,14 @@ from agent.nodes.param_relation_extract.self_check import (
 logger = logging.getLogger(__name__)
 
 MAX_SELF_CHECK_ROUNDS = 2
-MAX_WALL_TIME_PER_DOC = 120  # seconds
+MAX_WALL_TIME_PER_DOC = 300  # seconds
 
 
 async def extract_relations_agent(
     section_content: str,
     param_names: list[str],
     llm: ChatOpenAI,
+    implicit_params: list[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Agent-style iterative relation extraction with self-check loop.
 
@@ -51,7 +52,7 @@ async def extract_relations_agent(
 
     try:
         all_relations, report = await asyncio.wait_for(
-            _run_agent_rounds(section_content, param_names, llm, t0),
+            _run_agent_rounds(section_content, param_names, llm, t0, implicit_params),
             timeout=MAX_WALL_TIME_PER_DOC,
         )
     except asyncio.TimeoutError:
@@ -88,6 +89,7 @@ async def _run_agent_rounds(
     param_names: list[str],
     llm: ChatOpenAI,
     t0: float,
+    implicit_params: list[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Core agent rounds (extracted so asyncio.wait_for can wrap it)."""
     all_relations: list[dict[str, Any]] = []
@@ -102,7 +104,7 @@ async def _run_agent_rounds(
 
     try:
         # ---- Round 1: Chunked extraction ----
-        chunked = await extract_relations_chunked(section_content, llm)
+        chunked = await extract_relations_chunked(section_content, llm, implicit_params)
         all_relations = _dedup_relations(chunked)
         report["round1"] = len(all_relations)
         logger.info("Agent round 1 (chunked): %d relations (%.1fs)",

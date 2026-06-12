@@ -9,7 +9,9 @@ InitDoc → [ProductSupport ∥ FunctionSignatureExtract
           ∥ ArrayLengthExtract ∥ AllowedRangeExtract
           ∥ ParamRelationExtract ∥ ReturnCodeExtract
           ∥ DeterminismExtract ∥ DtypeComboExtract]
-       → BuildParamRelations → BuildParamConstraint → AssembleResult → END
+       → BuildParamRelations
+       → BuildSingleParamConstraint
+       → BuildParamConstraint → AssembleResult → END
 
 Note: FunctionSignatureExtract also produces the flat parameters list
 (replaces the old parse_params node).
@@ -20,12 +22,16 @@ import logging
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
+from agent.nodes.implicit_param_extract import implicit_param_extract_node
 from agent.nodes.llm_description_extract import create_description_extract_subgraph
 from agent.nodes.allowed_range_extract import allowed_range_extract_node
 from agent.nodes.array_length_extract import array_length_extract_node
 from agent.nodes.assemble_result import assemble_result_node
 from agent.nodes.build_param_constraint import build_param_constraint_node
 from agent.nodes.build_param_relations import build_param_relations_node
+from agent.nodes.single_param_constraint import (
+    build_single_param_constraint_node,
+)
 from agent.nodes.determinism_extract import determinism_extract_node
 from agent.nodes.dformat_extract import dformat_extract_node
 from agent.nodes.dtype_combo_extract import dtype_combo_extract_node
@@ -68,7 +74,8 @@ def create_pipeline_graph() -> CompiledStateGraph:
                                     ∥ ArrayLengthExtract ∥ AllowedRangeExtract
                                     ∥ ReturnCodeExtract ∥ DeterminismExtract
                                     ∥ DtypeComboExtract ∥ ParamRelationExtract]
-               → BuildParamRelations → BuildParamConstraint
+               → BuildParamRelations → BuildSingleParamConstraint
+               → BuildParamConstraint
                → AssembleResult → END]
 
     Returns a LangGraph ``CompiledStateGraph`` using ``PipelineState``.
@@ -77,6 +84,7 @@ def create_pipeline_graph() -> CompiledStateGraph:
     graph.add_node("init_doc", init_doc_node)
     graph.add_node("product_support", product_support_node)
     graph.add_node("table_column_extract", table_column_extract_node)
+    graph.add_node("implicit_param_extract", implicit_param_extract_node)
     description_subgraph = create_description_extract_subgraph()
     graph.add_node("llm_description_extract", description_subgraph)
     graph.add_node("function_signature_extract", function_signature_extract_node)
@@ -92,6 +100,10 @@ def create_pipeline_graph() -> CompiledStateGraph:
     graph.add_node("dtype_combo_extract", dtype_combo_extract_node)
     graph.add_node("build_param_constraint", build_param_constraint_node)
     graph.add_node("build_param_relations", build_param_relations_node)
+    graph.add_node(
+        "build_single_param_constraint",
+        build_single_param_constraint_node,
+    )
     graph.add_node("assemble_result", assemble_result_node)
 
     param_relation_subgraph = create_param_relation_subgraph()
@@ -102,7 +114,8 @@ def create_pipeline_graph() -> CompiledStateGraph:
     graph.add_edge("product_support", "table_column_extract")
     graph.add_edge("function_signature_extract", "table_column_extract")
     graph.add_edge("function_explanation_extract", "table_column_extract")
-    graph.add_edge("table_column_extract", "llm_description_extract")
+    graph.add_edge("table_column_extract", "implicit_param_extract")
+    graph.add_edge("implicit_param_extract", "llm_description_extract")
     graph.add_edge("llm_description_extract", "shape_extract")
     graph.add_edge("llm_description_extract", "dtype_extract")
     graph.add_edge("llm_description_extract", "dformat_extract")
@@ -123,7 +136,10 @@ def create_pipeline_graph() -> CompiledStateGraph:
     graph.add_edge("determinism_extract", "build_param_constraint")
     graph.add_edge("dtype_combo_extract", "build_param_constraint")
     graph.add_edge("param_relation_extract", "build_param_relations")
-    graph.add_edge("build_param_relations", "build_param_constraint")
+    graph.add_edge("build_param_relations", "build_single_param_constraint")
+    graph.add_edge(
+        "build_single_param_constraint", "build_param_constraint",
+    )
     graph.add_edge("build_param_constraint", "assemble_result")
     graph.add_edge("assemble_result", END)
     return graph.compile(name="operator-pipeline")

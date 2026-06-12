@@ -28,6 +28,7 @@ async def fetch_sections_node(state: RelationExtractState) -> dict[str, Any]:
             "ws_section_content": "",
             "exe_section_content": "",
             "param_names": [],
+            "implicit_params": [],
             "error": None,
         }
 
@@ -62,6 +63,7 @@ async def fetch_sections_node(state: RelationExtractState) -> dict[str, Any]:
             "ws_section_content": ws_content,
             "exe_section_content": exe_content,
             "param_names": param_names,
+            "implicit_params": state.get("implicit_params", []),
             "error": None,
         }
 
@@ -71,5 +73,6 @@ async def fetch_sections_node(state: RelationExtractState) -> dict[str, Any]:
             "ws_section_content": "",
             "exe_section_content": "",
             "param_names": [],
+            "implicit_params": [],
             "error": "fetch_sections_failed",
         }

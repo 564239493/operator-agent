@@ -19,6 +19,7 @@ RELATION_EXTRACT_PROMPT = """\
 ## 关系类型定义
 {relation_types}
 
+{implicit_params_context}
 ## 提取规则
 1. 只提取涉及两个或两个以上参数的关系，单参数自身约束不提取
 2. 判断每段文本的"描述主体"——关系描述的是哪些参数之间的什么维度的耦合
@@ -69,3 +70,34 @@ RELATION_EXTRACT_PROMPT = """\
 ## Section 内容：
 {section_content}
 """
+
+# ---------------------------------------------------------------------------
+# Implicit dimension variables context (injected into prompt when present)
+# ---------------------------------------------------------------------------
+
+IMPLICIT_PARAMS_CONTEXT = """\
+## 隐式维度变量（非函数签名参数，但在 shape 描述中作为命名维度使用）
+以下标识符虽然不是函数签名中的参数，但它们是重要的维度变量，\
+在 shape 描述中以命名形式出现。请将它们视为正式参数，\
+并在涉及它们的约束关系中将其列入 params 列表：
+{implicit_params_list}
+
+"""
+
+
+def format_implicit_params_context(implicit_params: list[dict]) -> str:
+    """Build the implicit params context string for injection into prompts.
+
+    Returns empty string when no implicit params exist, so the prompt
+    section is omitted entirely.
+    """
+    if not implicit_params:
+        return ""
+    lines = []
+    for ip in implicit_params:
+        name = ip.get("param_name", "")
+        ptype = ip.get("param_type", "int64_t")
+        lines.append(f"- {name}（{ptype}）：隐式维度变量")
+    return IMPLICIT_PARAMS_CONTEXT.format(
+        implicit_params_list="\n".join(lines)
+    )
