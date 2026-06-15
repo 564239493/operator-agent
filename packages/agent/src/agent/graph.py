@@ -14,7 +14,7 @@ InitDoc → [ProductSupport ∥ FunctionSignatureExtract
        → BuildParamConstraint → AssembleResult → END
 
 Note: FunctionSignatureExtract also produces the flat parameters list
-(replaces the old parse_params node).
+(replaces the old parse_params node)。
 """
 
 import logging
