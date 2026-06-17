@@ -11,6 +11,7 @@ from agent.core.config import settings
 from agent.mcp_client import MCPClient
 from agent.nodes.state import PipelineState
 from agent.prompts import PRODUCT_SUPPORT_EXTRACT_PROMPT
+from agent.core.llm import create_llm
 
 logger = logging.getLogger(__name__)
 
@@ -86,12 +87,7 @@ def _find_product_support_content(sections: list[dict]) -> str | None:
 
 async def _extract_via_llm(content: str) -> list[dict]:
     """Call LLM to extract product support info from markdown table content."""
-    llm = ChatOpenAI(
-        api_key=settings.active_api_key,
-        base_url=settings.active_base_url,
-        model=settings.active_model,
-        temperature=0.1,
-    )
+    llm = create_llm()
 
     prompt = PRODUCT_SUPPORT_EXTRACT_PROMPT.format(content=content)
     response = await llm.ainvoke(prompt)

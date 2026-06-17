@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any
 
 from mcp import ClientSession, StdioServerParameters
@@ -25,7 +26,12 @@ class MCPClient:
         if not server_command:
             server_command = settings.mcp_server_command
         parts = server_command.split()
-        self._params = StdioServerParameters(command=parts[0], args=parts[1:])
+        # Pass current env explicitly — mcp's stdio_client on Windows only
+        # forwards a minimal env subset (no PYTHONPATH), which causes the
+        # server subprocess to fail with ModuleNotFoundError.
+        self._params = StdioServerParameters(
+            command=parts[0], args=parts[1:], env=dict(os.environ),
+        )
 
     async def _call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """Start MCP server subprocess, call a tool, and return the result."""

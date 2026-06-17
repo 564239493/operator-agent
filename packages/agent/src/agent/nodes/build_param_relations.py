@@ -21,6 +21,7 @@ from agent.core.config import settings
 from agent.mcp_client import MCPClient
 from agent.nodes.state import PipelineState
 from agent.prompts import RELATION_OBJECT_BUILD_PROMPT
+from agent.core.llm import create_llm
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ _ALLOWED_ATTRS = {"shape", "dtype", "format", "range_value"}
 _BUILTIN_NAMES = {
     "True", "False", "None", "len", "range",
     "all", "any", "int", "float", "str", "bool", "set",
+    "min", "max", "list",
 }
 
 # Phase 2a: Few-shot examples for enhanced retry
@@ -68,6 +70,11 @@ FEW_SHOT_EXAMPLES = {
         "bad": "x.shape[0] > 0",
         "good": "all(d > 0 for d in x.shape)",
         "note": "'所有维度' 必须用 all() 表达全称量词",
+    },
+    "syntax_tuple": {
+        "bad": "tuple(x.shape) == tuple(y.shape)",
+        "good": "list(x.shape) == list(y.shape)",
+        "note": "禁止使用 tuple()，用 list() 代替，或直接用 x.shape == y.shape 比较",
     },
 }
 
@@ -293,6 +300,8 @@ def _select_relevant_example(error: str, expr: str) -> str:
         ex = FEW_SHOT_EXAMPLES["syntax_implies"]
     elif "null" in expr_lower:
         ex = FEW_SHOT_EXAMPLES["syntax_null"]
+    elif "tuple" in expr_lower:
+        ex = FEW_SHOT_EXAMPLES["syntax_tuple"]
     elif "unknown parameter" in error_lower:
         ex = FEW_SHOT_EXAMPLES["ref_hallucination"]
     elif "unknown attribute" in error_lower:
@@ -529,12 +538,7 @@ async def _batch_extract_relation_objects(
     sem = asyncio.Semaphore(_CONCURRENCY_LIMIT)
 
     try:
-        llm = ChatOpenAI(
-            api_key=settings.active_api_key,
-            base_url=settings.active_base_url,
-            model=settings.active_model,
-            temperature=0.1,
-        )
+        llm = create_llm()
     except Exception:
         logger.exception("BuildParamRelations: failed to create LLM")
         return [{"expr_type": "", "expr": ""}] * len(relations)

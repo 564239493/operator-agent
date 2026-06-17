@@ -94,12 +94,8 @@ async def function_signature_extract_node(state: PipelineState) -> dict[str, Any
 
 
 def _create_llm() -> ChatOpenAI:
-    return ChatOpenAI(
-        api_key=settings.active_api_key,
-        base_url=settings.active_base_url,
-        model=settings.active_model,
-        temperature=0.1,
-    )
+    from agent.core.llm import create_llm
+    return create_llm()
 
 
 async def _extract_signatures_via_llm(content: str) -> list[dict]:

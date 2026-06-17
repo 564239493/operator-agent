@@ -21,12 +21,8 @@ _JSON_BLOCK_RE = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.IGNORECASE)
 
 
 def _create_llm() -> ChatOpenAI:
-    return ChatOpenAI(
-        api_key=settings.active_api_key,
-        base_url=settings.active_base_url,
-        model=settings.active_model,
-        temperature=0.1,
-    )
+    from agent.core.llm import create_llm
+    return create_llm()
 
 
 def _parse_relations_response(text: str) -> list[dict[str, Any]]:

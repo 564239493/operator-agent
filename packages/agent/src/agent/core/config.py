@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     expr_max_retries: int = Field(default=2, ge=0, le=10)
     dimensions_max_retries: int = Field(default=2, ge=0, le=10)
 
+    # Max tokens for LLM responses (prevents truncation of large JSON outputs)
+    llm_max_tokens: int = Field(default=16384, ge=256, le=131072)
+
     # Layer 2 LLM switch for single-parameter constraint extraction.
     # When False (default), only Layer 1 deterministic regex rules run.
     enable_single_param_llm: bool = False

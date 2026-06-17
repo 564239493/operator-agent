@@ -24,6 +24,7 @@ from langchain_openai import ChatOpenAI
 from agent.core.config import settings
 from agent.mcp_client import MCPClient
 from agent.nodes.state import PipelineState
+from agent.core.llm import create_llm
 
 logger = logging.getLogger(__name__)
 
@@ -431,12 +432,7 @@ async def build_single_param_constraint_node(
         layer2_results: list[dict] = []
         if getattr(settings, "enable_single_param_llm", False):
             try:
-                llm = ChatOpenAI(
-                    api_key=settings.active_api_key,
-                    base_url=settings.active_base_url,
-                    model=settings.active_model,
-                    temperature=0.1,
-                )
+                llm = create_llm()
             except Exception:
                 logger.exception(
                     "SingleParamConstraint: failed to create LLM, "

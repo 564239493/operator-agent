@@ -11,6 +11,7 @@ from agent.core.config import settings
 from agent.mcp_client import MCPClient
 from agent.nodes.state import PipelineState
 from agent.prompts import FUNCTION_EXPLANATION_EXTRACT_PROMPT
+from agent.core.llm import create_llm
 
 logger = logging.getLogger(__name__)
 
@@ -81,12 +82,7 @@ def _find_content(sections: list[dict]) -> str | None:
 
 async def _extract_via_llm(content: str, op: str) -> dict:
     """Call LLM to summarize function explanation."""
-    llm = ChatOpenAI(
-        api_key=settings.active_api_key,
-        base_url=settings.active_base_url,
-        model=settings.active_model,
-        temperature=0.1,
-    )
+    llm = create_llm()
     prompt = FUNCTION_EXPLANATION_EXTRACT_PROMPT.format(
         content=content, operator_name=op
     )

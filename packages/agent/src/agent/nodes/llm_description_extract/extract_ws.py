@@ -33,12 +33,8 @@ _OUTPUT_KEYWORDS = ("输出", "出参", "output", "计算输出")
 # ---------------------------------------------------------------------------
 
 def _create_llm() -> ChatOpenAI:
-    return ChatOpenAI(
-        api_key=settings.active_api_key,
-        base_url=settings.active_base_url,
-        model=settings.active_model,
-        temperature=0.1,
-    )
+    from agent.core.llm import create_llm
+    return create_llm()
 
 
 def _parse_direction(raw: str) -> str:

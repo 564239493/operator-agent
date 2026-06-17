@@ -20,6 +20,7 @@ from agent.core.config import settings
 from agent.mcp_client import MCPClient
 from agent.nodes.state import PipelineState
 from agent.prompts import ALLOWED_RANGE_VALUE_BUILD_PROMPT, SHAPE_TO_DIMENSIONS_PROMPT
+from agent.core.llm import create_llm
 
 logger = logging.getLogger(__name__)
 
@@ -601,12 +602,7 @@ async def _batch_parse_dimensions(params: list[dict]) -> dict[tuple[str, str], l
 
     # Phase 2: LLM batch parsing
     try:
-        llm = ChatOpenAI(
-            api_key=settings.active_api_key,
-            base_url=settings.active_base_url,
-            model=settings.active_model,
-            temperature=0.1,
-        )
+        llm = create_llm()
     except Exception:
         logger.exception("BuildParamConstraint: failed to create LLM for dimensions")
         # Fallback: empty for all remaining
@@ -763,12 +759,7 @@ async def _batch_extract_allowed_range(
 
     # Phase 2: LLM extraction with retry + validation
     try:
-        llm = ChatOpenAI(
-            api_key=settings.active_api_key,
-            base_url=settings.active_base_url,
-            model=settings.active_model,
-            temperature=0.1,
-        )
+        llm = create_llm()
     except Exception:
         logger.exception("BuildParamConstraint: failed to create LLM for allowed_range")
         for p in llm_needed:

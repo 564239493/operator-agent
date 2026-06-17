@@ -127,9 +127,5 @@ def _parse_json_response(text: str) -> list[dict] | None:
 
 
 def _create_llm() -> ChatOpenAI:
-    return ChatOpenAI(
-        api_key=settings.active_api_key,
-        base_url=settings.active_base_url,
-        model=settings.active_model,
-        temperature=0.1,
-    )
+    from agent.core.llm import create_llm
+    return create_llm()
