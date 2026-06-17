@@ -22,7 +22,7 @@ from agent.mcp_client import MCPClient
 from agent.nodes.state import PipelineState
 from agent.prompts import RELATION_OBJECT_BUILD_PROMPT
 from agent.runtime.context import get_context
-from agent.runtime.events import EventType
+from agent.runtime.events import EventType, Span, SpanType
 
 logger = logging.getLogger(__name__)
 
@@ -591,8 +591,9 @@ async def build_param_relations_node(state: PipelineState) -> dict[str, Any]:
             return {"error": None}
 
         ctx = get_context()
+        _progress_span = Span(span_id="progress", parent_span_id=ctx.current_span_id if ctx else None, span_type=SpanType.NODE, name="build_param_relations")
         _emit = lambda evt, data: (
-            ctx.manager.emit(evt, ctx.run_id, None, {
+            ctx.manager.emit(evt, ctx.run_id, _progress_span, {
                 "agent_id": "constraint",
                 "node_id": "build_param_relations",
                 **data,
