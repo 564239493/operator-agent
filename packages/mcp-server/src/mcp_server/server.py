@@ -167,10 +167,10 @@ from mcp_server.tools.document_tools import (
 from mcp_server.tools.document_tools import (
     update_param_shape as _update_param_shape,
 )
-from mcp_server.tools.document_tools import (
+from mcp_server.tools.parameter_tools import (
     update_param_platform_attributes as _update_param_plat_attrs,
 )
-from mcp_server.tools.document_tools import (
+from mcp_server.tools.parameter_tools import (
     update_param_usage_notes as _update_param_usage_notes,
 )
 from mcp_server.tools.task_tools import (
